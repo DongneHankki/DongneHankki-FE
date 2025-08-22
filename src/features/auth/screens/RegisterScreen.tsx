@@ -50,6 +50,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     phone: string;
     code: number;
   } | null>(null);
+  const [selectedCarrier, setSelectedCarrier] = useState('SKT');
+  const [showCarrierModal, setShowCarrierModal] = useState(false);
 
 
 
@@ -201,7 +203,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     }
 
     // 본인인증 검사
-    if (!authData) {
+    if (!isVerificationCompleted) {
       Alert.alert('본인인증 필요', '휴대폰 본인인증을 완료해주세요.');
       valid = false;
     }
@@ -228,8 +230,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           console.error('뒤로가기 오류:', error);
         }
       }} />
-      <Text style={styles.label}><Text style={common.star}>*</Text> 는 필수 입력 사항입니다</Text>
-      <View style={styles.formWrapper}>
+      <Text style={[common.label, { textAlign: 'center' }]}><Text style={common.star}>*</Text> 는 필수 입력 사항입니다</Text>
+      <View style={common.formWrapper}>
         {/* 아이디 */}
         <Text style={common.label}>아이디 <Text style={common.star}>*</Text></Text>
         <View style={common.row}>
@@ -288,16 +290,37 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         {!!nameError && <Text style={common.errorMsg}>{nameError}</Text>}
 
         {/* 휴대폰 인증 */}
-        <Text style={common.label}>휴대폰번호 본인인증 <Text style={common.star}>*</Text></Text>
+        <Text style={common.label}>휴대폰번호 <Text style={common.star}>*</Text></Text>
         
-        <View style={common.row}>
+        {/* 통신사 선택 */}
+        <View style={styles.carrierContainer}>
+          <TouchableOpacity 
+            style={styles.carrierSelector}
+            onPress={() => setShowCarrierModal(true)}
+          >
+            <Text style={styles.carrierText}>{selectedCarrier}</Text>
+            <Icon name="chevron-down" size={20} color="#666" />
+          </TouchableOpacity>
+          
           <TextInput
-            style={[common.input, { flex: 1 }]}
-            placeholder="010-1234-5678"
+            style={[common.input, { flex: 1, marginLeft: 8 }]}
+            placeholder="숫자만 입력해 주세요."
             value={phone}
             onChangeText={handlePhoneChange}
             keyboardType="phone-pad"
             maxLength={13}
+          />
+        </View>
+        
+        {/* 인증번호 입력 */}
+        <View style={styles.verificationContainer}>
+          <TextInput
+            style={[common.input, { flex: 1 }]}
+            placeholder="인증번호를 입력해 주세요."
+            value={verificationCode}
+            onChangeText={handleVerificationCodeChange}
+            keyboardType="numeric"
+            maxLength={6}
           />
           <TouchableOpacity 
             style={[
@@ -313,49 +336,96 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               isVerificationSent && styles.verifyButtonTextSent,
               isVerificationCompleted && styles.verifyButtonTextSuccess
             ]}>
-              {isVerificationCompleted ? '인증완료' : isVerificationSent ? '재전송' : '인증번호 전송'}
+              {isVerificationCompleted ? '인증완료' : isVerificationSent ? '재전송' : '인증요청'}
             </Text>
           </TouchableOpacity>
         </View>
-        {!!phoneError && <Text style={common.errorMsg}>{phoneError}</Text>}
-        {isVerificationSent && countdown > 0 && (
-          <Text style={styles.timerText}>남은 시간: {formatTime(countdown)}</Text>
-        )}
-
-        {isVerificationSent && (
-          <View style={common.row}>
-            <TextInput
-              style={[common.input, { flex: 1 }]}
-              placeholder="인증번호 6자리 입력"
-              value={verificationCode}
-              onChangeText={handleVerificationCodeChange}
-              keyboardType="numeric"
-              maxLength={6}
-            />
+        
+        {/* 인증번호 확인 버튼 */}
+        {isVerificationSent && !isVerificationCompleted && (
+          <View style={styles.verificationContainer}>
             <TouchableOpacity 
-              style={[
-                styles.verifyButton,
-                isVerificationCompleted && styles.verifyButtonSuccess
-              ]} 
+              style={[styles.verifyButton, { width: '100%' }]} 
               onPress={onVerifyCode}
-              disabled={isVerificationCompleted}
             >
-              <Text style={[
-                styles.verifyButtonText,
-                isVerificationCompleted && styles.verifyButtonTextSuccess
-              ]}>
-                {isVerificationCompleted ? '인증완료' : '확인'}
-              </Text>
+              <Text style={styles.verifyButtonText}>확인</Text>
             </TouchableOpacity>
           </View>
         )}
+        
+        {!!phoneError && <Text style={common.errorMsg}>{phoneError}</Text>}
         {!!verificationCodeError && <Text style={common.errorMsg}>{verificationCodeError}</Text>}
+        
+        {isVerificationCompleted && (
+          <View style={styles.verificationStatusRow}>
+            <Text style={styles.verificationSuccess}>휴대폰 번호가 인증되었습니다</Text>
+          </View>
+        )}
+        
+        {/* 타이머만 표시 (인증 완료되지 않은 경우) */}
+        {isVerificationSent && countdown > 0 && !isVerificationCompleted && (
+          <Text style={styles.timerText}>남은 시간: {formatTime(countdown)}</Text>
+        )}
+
+        {/* 휴대폰 본인인증 서비스 체크박스 */}
+        <View style={styles.verificationCheckbox}>
+          <TouchableOpacity style={styles.checkbox}>
+            <Icon name="check" size={16} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.checkboxText}>휴대폰 본인인증 서비스</Text>
+          <Text style={styles.checkboxText}>*</Text>
+          <TouchableOpacity>
+            <Text style={styles.detailLink}>자세히 보기</Text>
+          </TouchableOpacity>
+        </View>
+        
 
         {/* 다음 버튼 */}
-        <TouchableOpacity style={styles.nextButton} onPress={onNextPress}>
-          <Text style={styles.nextButtonText}>다음</Text>
+        <TouchableOpacity style={common.brownButton} onPress={onNextPress}>
+          <Text style={common.brownButtonText}>다음</Text>
         </TouchableOpacity>
       </View>
+      
+      {/* 통신사 선택 하단 탭 */}
+      {showCarrierModal && (
+        <View style={styles.bottomSheetOverlay}>
+          <TouchableOpacity 
+            style={styles.bottomSheetBackdrop}
+            onPress={() => setShowCarrierModal(false)}
+          />
+          <View style={styles.bottomSheet}>
+            <View style={styles.bottomSheetHandle} />
+            <Text style={styles.bottomSheetTitle}>통신사</Text>
+            <Text style={styles.bottomSheetSubtitle}>이용 중이신 통신사를 선택해주세요</Text>
+            
+            {['SKT', 'KT', 'LG U+', '알뜰폰'].map((carrier) => (
+              <TouchableOpacity
+                key={carrier}
+                style={[
+                  styles.carrierOption,
+                  selectedCarrier === carrier && styles.carrierOptionSelected
+                ]}
+                onPress={() => {
+                  setSelectedCarrier(carrier);
+                }}
+              >
+                <Text style={[
+                  styles.carrierOptionText,
+                  selectedCarrier === carrier && styles.carrierOptionTextSelected
+                ]}>
+                  {carrier}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.bottomSheetConfirmButton}
+              onPress={() => setShowCarrierModal(false)}
+            >
+              <Text style={styles.bottomSheetConfirmButtonText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -370,14 +440,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 1,
-    height: 30,
-    textAlign: 'center',
-  },
   checkButtonText: {
     color: '#2E1404',
     fontWeight: 'bold',
@@ -391,8 +453,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
   },
+  verificationStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
   verifyButton: {
     marginLeft: 8,
+    marginTop: 0,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#2E1404',
@@ -407,8 +477,8 @@ const styles = StyleSheet.create({
     borderColor: '#BDBDBD',
   },
   verifyButtonSuccess: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: '#BDBDBD',
+    borderColor: '#BDBDBD',
   },
   verifyButtonText: {
     color: '#2E1404',
@@ -424,7 +494,6 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 12,
     color: '#FF6B6B',
-    marginTop: 4,
     marginLeft: 4,
     fontWeight: 'bold',
   },
@@ -445,34 +514,69 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  nextButton: {
-    backgroundColor: '#2E1404',
-    borderRadius: 15,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 16,
-    height: 66,
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  nextButtonText: {
-    color: '#fff',
-    fontSize: 25,
-    fontWeight: 'bold',
-  },
-  errorMsg: {
-    color: 'red',
-    fontSize: 13,
-    marginBottom: 4,
-    marginLeft: 4,
-  },
-  formWrapper: {
-    paddingHorizontal: 24,
-    flex: 1,
-  },
   certButtonSuccess: {
     backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+  },
+  carrierContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  carrierSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    minWidth: 80,
+    justifyContent: 'space-between',
+  },
+  carrierText: {
+    color: '#2E1404',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  verificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    margin: 0,
+  },
+  verificationCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#2E1404',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: '#2E1404',
+    marginRight: 4,
+  },
+  detailLink: {
+    fontSize: 14,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
+    marginLeft: 8,
+  },
+  verificationSuccess: {
+    fontSize: 14,
+    color: '#2E1404',
+    fontWeight: 'bold',
+    marginTop: 0,
+    marginBottom: 8,
+    textAlign: 'right',
   },
   certButtonTextSuccess: {
     color: '#fff',
@@ -482,6 +586,106 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginTop: 4,
     marginLeft: 4,
+    fontWeight: 'bold',
+  },
+  bottomSheetOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  bottomSheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E1404',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  bottomSheetSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  carrierOption: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  carrierOptionSelected: {
+    backgroundColor: '#f0f0f0',
+  },
+  carrierOptionText: {
+    fontSize: 16,
+    color: '#2E1404',
+    textAlign: 'center',
+  },
+  carrierOptionTextSelected: {
+    fontWeight: 'bold',
+  },
+  modalConfirmButton: {
+    backgroundColor: '#2E1404',
+    borderRadius: 8,
+    paddingVertical: 16,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  modalConfirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  bottomSheetConfirmButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#AEAEAE',
+    borderRadius: 8,
+    paddingVertical: 16,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  bottomSheetConfirmButtonText: {
+    color: '#AEAEAE',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

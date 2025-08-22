@@ -61,27 +61,26 @@ const ConsumerRegisterScreen: React.FC<ConsumerRegisterProps> = ({ navigation })
   return (
     <ScrollView contentContainerStyle={common.container}>
       <RegisterHeader title="회원가입" step={3} onBack={() => navigation.goBack()} />
-      <Text style={styles.subtitle}>닉네임을{"\n"}입력해주세요!</Text>
+      <Text style={styles.subtitle}>닉네임을{"\n"}기입해주세요!</Text>
 
       <View style={styles.formWrapper}>
         <Text style={common.label}>닉네임 <Text style={common.star}>*</Text></Text>
-        <TextInput
-          style={common.input}
-          value={nickname}
-          onChangeText={text => {
-            setNickname(text);
-            setNicknameChecked(false);
-            setNicknameCheckMsg('');
-            setNicknameError('');
-          }}
-        />
-        <View style={styles.inputBottomRow}>
-          <Text style={common.errorMsg}>{nicknameCheckMsg || nicknameError}</Text>
+        <View style={common.row}>
+          <TextInput
+            style={[common.input, { flex: 1 }]}
+            value={nickname}
+            onChangeText={text => {
+              setNickname(text);
+              setNicknameChecked(false);
+              setNicknameCheckMsg('');
+              setNicknameError('');
+            }}
+          />
           <TouchableOpacity style={styles.checkButton} onPress={handleCheckNickname}>
             <Text style={styles.checkButtonText}>중복확인</Text>
           </TouchableOpacity>
         </View>
-
+        <Text style={styles.errorMsg}>{nicknameCheckMsg || nicknameError}</Text>
         <TouchableOpacity style={common.brownButton} onPress={onNext}>
           <Text style={common.brownButtonText}>다음</Text>
         </TouchableOpacity>
@@ -98,9 +97,6 @@ const styles = StyleSheet.create({
     marginVertical: 70,
     fontWeight: '400'
   },
-  star: {
-    color: '#FF0000',
-  },
   formWrapper: {
     paddingHorizontal: 24,
     flex: 1,
@@ -112,29 +108,25 @@ const styles = StyleSheet.create({
     marginBottom: 1,
     height: 30,
   },
-  input: {
-    backgroundColor: '#EDEDED',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    width: '100%',
-    height: 56,
-    marginBottom: 8,
-  },
-  inputBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
   checkButton: {
+    marginLeft: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    borderRadius: 8,
+    paddingVertical: 20,
     paddingHorizontal: 16,
-    textAlign: 'right',
   },
   checkButtonText: {
     color: '#2E1404',
     fontWeight: 'bold',
-    marginTop: 10,
+  },
+  errorMsg: {
+    fontSize: 14,
+    color: '#2E1404',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'right',
   },
 });
 

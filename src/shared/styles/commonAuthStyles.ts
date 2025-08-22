@@ -1,4 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
+import { globalTextStyles, FONTS } from './globalStyles';
 
 export const common = StyleSheet.create({
   container: {
@@ -19,11 +20,10 @@ export const common = StyleSheet.create({
     paddingHorizontal: 24,
     flex: 1,
     justifyContent: 'flex-start',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   subtitle: {
-    fontSize: 30,
-    color: '#222',
+    ...globalTextStyles.heading1,
     textAlign: 'center',
     marginBottom: 48,
     fontWeight: '400'
@@ -34,7 +34,9 @@ export const common = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     height: 56,
-    marginTop: 5,
+    marginTop: 0,
+    marginBottom: 5,
+    fontFamily: FONTS.regular,
   },
   brownButton: {
     width: '100%',
@@ -48,15 +50,16 @@ export const common = StyleSheet.create({
     marginBottom: 16,
   },
   brownButtonText: {
+    ...globalTextStyles.button,
     color: '#fff',
     fontSize: 25,
-    fontWeight: 'bold',
   },
   errorMsg: {
     color: 'red',
     fontSize: 13,
     marginLeft: 4,
     margin: 0,
+    fontFamily: FONTS.regular,
   },
   star: {
     color: '#FF0000',
@@ -64,7 +67,8 @@ export const common = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 15,
+    marginBottom: 1,
     height: 30,
   },
   row: {
