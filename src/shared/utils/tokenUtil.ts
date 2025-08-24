@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Keychain from 'react-native-keychain';
 import axios from "axios";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,15 @@ import { useAuthStore } from '../store/authStore';
 
 const URL = `${API_BASE_URL}/api`;
 
+// Keychain 키 상수
+const KEYCHAIN_KEYS = {
+  ACCESS_TOKEN: 'dongnaehankki_access_token',
+  REFRESH_TOKEN: 'dongnaehankki_refresh_token',
+  USER_ID: 'dongnaehankki_user_id',
+  LOGIN_ID: 'dongnaehankki_login_id',
+  ROLE: 'dongnaehankki_role',
+} as const;
+
 const showToast = (text: string) =>{
     Toast.show({
         type: 'error',
@@ -16,9 +25,41 @@ const showToast = (text: string) =>{
       });
 };
 
+// Keychain에 데이터 저장
+const saveToKeychain = async (key: string, value: string): Promise<void> => {
+  try {
+    await Keychain.setGenericPassword(key, value);
+  } catch (error) {
+    console.error(`Keychain 저장 실패 (${key}):`, error);
+    throw new Error(`Keychain 저장에 실패했습니다: ${key}`);
+  }
+};
+
+// Keychain에서 데이터 조회
+const getFromKeychain = async (key: string): Promise<string | null> => {
+  try {
+    const credentials = await Keychain.getGenericPassword();
+    if (credentials && credentials.username === key) {
+      return credentials.password;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Keychain 조회 실패 (${key}):`, error);
+    return null;
+  }
+};
+
+// Keychain에서 데이터 삭제
+const removeFromKeychain = async (key: string): Promise<void> => {
+  try {
+    await Keychain.resetGenericPassword();
+  } catch (error) {
+    console.error(`Keychain 삭제 실패 (${key}):`, error);
+  }
+};
+
 export const saveTokens = async (accessToken: string, refreshToken: string, loginId?: string): Promise<void> => {
   try {
-
     const role = getRoleFromToken(accessToken);
     const userId = getUserIdFromToken(accessToken);
     
@@ -29,22 +70,22 @@ export const saveTokens = async (accessToken: string, refreshToken: string, logi
       useAuthStore.getState().setAuth({
         role,
         userId,
-        loginId: loginId || '', // loginId 추가
+        loginId: loginId || '',
         accessToken,
         refreshToken,
       });
     }
     
-    await AsyncStorage.setItem(
-      'Tokens',
-      JSON.stringify({
-        accessToken,
-        refreshToken,
-        role,
-        userId,
-      }),
-    );
-    console.log('토큰 저장 완료');
+    // Keychain에 각각 저장
+    await Promise.all([
+      saveToKeychain(KEYCHAIN_KEYS.ACCESS_TOKEN, accessToken),
+      saveToKeychain(KEYCHAIN_KEYS.REFRESH_TOKEN, refreshToken),
+      saveToKeychain(KEYCHAIN_KEYS.USER_ID, userId ? String(userId) : ''),
+      saveToKeychain(KEYCHAIN_KEYS.ROLE, role || ''),
+      saveToKeychain(KEYCHAIN_KEYS.LOGIN_ID, loginId || ''),
+    ]);
+    
+    console.log('토큰 Keychain 저장 완료');
   } catch (error: any) {
     console.error('토큰 저장 실패:', error.message);
     throw new Error('토큰 저장에 실패했습니다.');
@@ -69,7 +110,7 @@ export const getTokens = async (
         throw new Error("토큰이 없습니다.");
       }
 
-      await saveTokens(accessToken, refreshToken);
+      await saveTokens(accessToken, refreshToken, id);
     } else {
       throw new Error(res.data.message || '로그인에 실패했습니다.');
     }
@@ -91,39 +132,42 @@ export const getTokenFromLocal = async (): Promise<{
 } | null> => {
   try {
     console.log("GETTOKEN 시작");
-    const value = await AsyncStorage.getItem("Tokens");
     
-    if (value === null || value === undefined) {
+    // Keychain에서 모든 데이터 조회
+    const [accessToken, refreshToken, userId, loginId, role] = await Promise.all([
+      getFromKeychain(KEYCHAIN_KEYS.ACCESS_TOKEN),
+      getFromKeychain(KEYCHAIN_KEYS.REFRESH_TOKEN),
+      getFromKeychain(KEYCHAIN_KEYS.USER_ID),
+      getFromKeychain(KEYCHAIN_KEYS.LOGIN_ID),
+      getFromKeychain(KEYCHAIN_KEYS.ROLE),
+    ]);
+    
+    if (!accessToken || !refreshToken) {
       console.log("저장된 토큰 없음");
       return null;
     }
 
-    const parsedToken = JSON.parse(value);
-    
-    // 토큰 구조 검증
-    if (!parsedToken || typeof parsedToken !== 'object') {
-      console.log("토큰이 객체가 아님");
-      return null;
-    }
-
-    if (!parsedToken.accessToken || !parsedToken.refreshToken) {
-      console.log("토큰 필드 누락");
-      return null;
-    }
+    const tokenData = {
+      accessToken,
+      refreshToken,
+      userId: userId || undefined,
+      loginId: loginId || undefined,
+      role: role as 'owner' | 'customer' | undefined,
+    };
 
     // Zustand store에 정보 저장
-    if (parsedToken.role && parsedToken.userId) {
+    if (tokenData.role && tokenData.userId) {
       useAuthStore.getState().setAuth({
-        role: parsedToken.role,
-        userId: parsedToken.userId,
-        loginId: parsedToken.loginId || '', // loginId 추가
-        accessToken: parsedToken.accessToken,
-        refreshToken: parsedToken.refreshToken,
+        role: tokenData.role,
+        userId: tokenData.userId,
+        loginId: tokenData.loginId || '',
+        accessToken: tokenData.accessToken,
+        refreshToken: tokenData.refreshToken,
       });
     }
 
     console.log("토큰 로드 성공");
-    return parsedToken;
+    return tokenData;
     
   } catch (e: any) {
     console.error("토큰 로드 오류:", e.message);
@@ -131,11 +175,16 @@ export const getTokenFromLocal = async (): Promise<{
   }
 };
 
-
 export const logout = async (navigation: NativeStackNavigationProp<any>) => {
   try {
-    // AsyncStorage에서 토큰 삭제
-    await AsyncStorage.removeItem('Tokens');
+    // Keychain에서 모든 데이터 삭제
+    await Promise.all([
+      removeFromKeychain(KEYCHAIN_KEYS.ACCESS_TOKEN),
+      removeFromKeychain(KEYCHAIN_KEYS.REFRESH_TOKEN),
+      removeFromKeychain(KEYCHAIN_KEYS.USER_ID),
+      removeFromKeychain(KEYCHAIN_KEYS.LOGIN_ID),
+      removeFromKeychain(KEYCHAIN_KEYS.ROLE),
+    ]);
     
     // Zustand store 초기화
     useAuthStore.getState().clearAuth();
@@ -197,10 +246,8 @@ export const verifyTokens = async (
           refreshToken: Token.refreshToken,
         });
         
-        await AsyncStorage.setItem('Tokens', JSON.stringify({
-          ...Token,
-          'accessToken': newAccessToken,
-        }));
+        // Keychain에 새 accessToken 저장
+        await saveToKeychain(KEYCHAIN_KEYS.ACCESS_TOKEN, newAccessToken);
         console.log("새 토큰 저장 완료");
       }
       

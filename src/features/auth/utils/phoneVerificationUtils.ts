@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { validatePhoneFormat, validateVerificationCode } from './validationUtils';
+import { sendAuthCode, checkAuthCode } from '../services/CheckPhoneNumberAPI';
 
 // 타이머 포맷팅
 export const formatTime = (seconds: number): string => {
@@ -81,40 +82,47 @@ export const handleSendVerification = async (
       timerRef.current = null;
     }
     
-    // 임시로 성공 처리
-    setIsVerificationSent(true);
-    setCountdown(180); // 3분 타이머
-    setPhoneError('');
+    // API 호출하여 인증번호 전송
+    const phoneNumberOnly = phone.replace(/[^0-9]/g, '');
+    const result = await sendAuthCode(phoneNumberOnly);
     
-    // 타이머 시작 - useRef를 사용하여 메모리 누수 방지
-    timerRef.current = setInterval(() => {
-      try {
-        setCountdown((prev: number) => {
-          if (prev <= 1) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
+    if (result.status === 'success') {
+      setIsVerificationSent(true);
+      setCountdown(180); // 3분 타이머
+      setPhoneError('');
+      
+      // 타이머 시작 - useRef를 사용하여 메모리 누수 방지
+      timerRef.current = setInterval(() => {
+        try {
+          setCountdown((prev: number) => {
+            if (prev <= 1) {
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+              setIsVerificationSent(false);
+              return 0;
             }
-            setIsVerificationSent(false);
-            return 0;
+            return prev - 1;
+          });
+        } catch (error) {
+          console.error('타이머 오류:', error);
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
           }
-          return prev - 1;
-        });
-      } catch (error) {
-        console.error('타이머 오류:', error);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
+          setIsVerificationSent(false);
+          setCountdown(0);
         }
-        setIsVerificationSent(false);
-        setCountdown(0);
-      }
-    }, 1000);
+      }, 1000);
 
-    Alert.alert('인증번호 전송', '인증번호가 전송되었습니다.');
-  } catch (error) {
+      Alert.alert('인증번호 전송', '인증번호가 전송되었습니다.');
+    } else {
+      setPhoneError(result.message || '인증번호 전송에 실패했습니다.');
+    }
+  } catch (error: any) {
     console.error('인증번호 전송 오류:', error);
-    Alert.alert('오류', '인증번호 전송에 실패했습니다.');
+    setPhoneError(error.message || '인증번호 전송에 실패했습니다.');
   }
 };
 
@@ -134,8 +142,11 @@ export const handleVerifyCode = async (
       return;
     }
 
-    // 임시로 성공 처리 (실제로는 서버에서 검증)
-    if (verificationCode === '123456') { // 테스트용 코드
+    // API 호출하여 인증번호 확인
+    const phoneNumberOnly = phone.replace(/[^0-9]/g, '');
+    const result = await checkAuthCode(phoneNumberOnly, verificationCode);
+    
+    if (result.status === 'success') {
       setIsVerificationCompleted(true);
       setVerificationCodeError('');
       setAuthData({
@@ -145,11 +156,11 @@ export const handleVerifyCode = async (
       });
       Alert.alert('인증 완료', '본인인증이 완료되었습니다.');
     } else {
-      setVerificationCodeError('인증번호가 일치하지 않습니다.');
+      setVerificationCodeError(result.message || '인증번호가 일치하지 않습니다.');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('인증번호 확인 오류:', error);
-    Alert.alert('오류', '인증번호 확인에 실패했습니다.');
+    setVerificationCodeError(error.message || '인증번호 확인에 실패했습니다.');
   }
 };
 

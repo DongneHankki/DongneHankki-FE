@@ -200,11 +200,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       setNameError('');
     }
 
-    // 본인인증 검사 (임시로 비활성화)
-    // if (!authData) {
-    //   Alert.alert('본인인증 필요', '휴대폰 본인인증을 완료해주세요.');
-    //   valid = false;
-    // }
+    // 본인인증 검사
+    if (!authData) {
+      Alert.alert('본인인증 필요', '휴대폰 본인인증을 완료해주세요.');
+      valid = false;
+    }
 
     // 모든 조건이 맞으면 다음 단계로 진행
     if (valid) {
@@ -287,7 +287,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         />
         {!!nameError && <Text style={common.errorMsg}>{nameError}</Text>}
 
-        {/* 휴대폰 인증 (임시로 비활성화) */}
+        {/* 휴대폰 인증 */}
         <Text style={common.label}>휴대폰번호 본인인증 <Text style={common.star}>*</Text></Text>
         
         <View style={common.row}>

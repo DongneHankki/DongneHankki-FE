@@ -45,6 +45,13 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>네이버 맵에서 내 위치를 표시하기 위해 권한을 요청합니다.</string>
+	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>마케팅 포스트를 위한 사진 촬영에 카메라 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>마케팅 포스트를 위한 사진 선택에 갤러리 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>마케팅 포스트를 위한 사진 저장에 갤러리 접근이 필요합니다.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
