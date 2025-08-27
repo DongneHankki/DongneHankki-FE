@@ -21,7 +21,7 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
   const [isLoading, setIsLoading] = useState(false);
   
   const route = useRoute<RouteProp<AuthStackParamList, 'OwnerRegister'>>();
-  const { id, password, name, userType, phone } = route.params;
+  const { id, password, name, userType, phone, birth } = route.params;
 
   // 사업자 등록번호 확인 API 호출
   const handleBusinessNumberCheck = async () => {
@@ -75,7 +75,8 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
         userType: 'owner',
         address,
         addressDetail,
-        storeName
+        storeName,
+        birth
       });
     }
   };

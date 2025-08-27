@@ -6,13 +6,17 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 // Customer 스크린들 import
 import MapScreen from '../../features/map/screens/MapScreen';
-import StoreListScreen from '../../features/store/screens/StoreListScreen';
+import RecommendScreen from '../../features/recommend/screens/RecommendScreen';
 import FeedScreen from '../../features/sns/screens/FeedScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 
 // Owner 스크린들 import
+<<<<<<< HEAD
 import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
 import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
+=======
+// StoreManagementScreen은 제거됨
+>>>>>>> e80a13d5620773f9aaf235e38664fd356d4e39c6
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
@@ -32,14 +36,18 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
       return [
         { name: 'Map', component: MapScreen },
         { name: 'Subscribe', component: FeedScreen },
-        { name: 'Recommend', component: StoreListScreen },
+        { name: 'Recommend', component: RecommendScreen },
         { name: 'Profile', component: ProfileScreen },
       ];
     } else {
       return [
         { name: 'Map', component: MapScreen },
+<<<<<<< HEAD
         { name: 'Subscribe', component: OwnerFeedScreen },
         { name: 'Management', component: StoreManagementScreen },
+=======
+        { name: 'Subscribe', component: FeedScreen },
+>>>>>>> e80a13d5620773f9aaf235e38664fd356d4e39c6
         { name: 'Profile', component: ProfileScreen },
       ];
     }
@@ -59,8 +67,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     ];
 
     // Owner 전용 아이콘
-    const OWNER_ICONS = [
-      { name: 'Management', label: '점포 관리', icon: 'note-edit-outline', activeIcon: 'note-edit', type: 'MaterialCommunityIcons' },
+    const OWNER_ICONS: any[] = [
+      // Management는 제거됨
     ];
 
     // 모든 아이콘을 합침
@@ -115,7 +123,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
             tabBarLabel: screen.name === 'Map' ? '지도' : 
                          screen.name === 'Subscribe' ? 'SNS' : 
                          screen.name === 'Recommend' ? '추천' : 
-                         screen.name === 'Management' ? '점포 관리' : 
                          screen.name === 'Profile' ? '내 정보' : screen.name,
           }}
         />

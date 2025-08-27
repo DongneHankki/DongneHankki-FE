@@ -13,7 +13,7 @@ interface ConsumerRegisterProps {
 
 const ConsumerRegisterScreen: React.FC<ConsumerRegisterProps> = ({ navigation }) => {
   const route = useRoute<RouteProp<AuthStackParamList, 'ConsumerRegister'>>();
-  const { id, password, name, phone, userType } = route.params;
+  const { id, password, name, phone, userType, birth } = route.params;
   const [nickname, setNickname] = useState('');
   const [nicknameChecked, setNicknameChecked] = useState(false);
   const [nicknameCheckMsg, setNicknameCheckMsg] = useState('');
@@ -53,7 +53,8 @@ const ConsumerRegisterScreen: React.FC<ConsumerRegisterProps> = ({ navigation })
         name,
         phone,
         userType,
-        nickname
+        nickname,
+        birth
       });
     }
   };

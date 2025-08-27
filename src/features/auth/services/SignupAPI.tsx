@@ -5,9 +5,10 @@ export interface SignupRequest {
   loginId: string;
   password: string;
   name: string;
-  nickname: string;
+  nickname?: string; //customer인 경우에만
   phoneNumber: string;
   storeId?: number; // owner인 경우에만
+  birth: string;
 }
 
 export interface SignupResponse {

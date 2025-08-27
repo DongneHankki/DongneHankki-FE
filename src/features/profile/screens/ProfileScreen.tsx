@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../../shared/store/authStore';
+import { logout } from '../../../shared/utils/tokenUtil';
 
 const ProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -23,19 +23,10 @@ const ProfileScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // AsyncStorage에서 토큰 삭제
-              await AsyncStorage.removeItem('Tokens');
+              // tokenUtil의 logout 함수를 사용하여 Keychain에서 데이터 삭제
+              await logout(navigation);
               
-              // Zustand store 초기화
-              clearAuth();
-              
-              console.log('로그아웃 완료 - 토큰 삭제됨');
-              
-              // AuthNavigator의 초기 화면(LoginScreen)으로 이동
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Auth' }],
-              });
+              console.log('로그아웃 완료 - Keychain 데이터 삭제됨');
             } catch (error) {
               console.error('로그아웃 실패:', error);
               Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');

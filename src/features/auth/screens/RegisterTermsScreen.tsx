@@ -12,7 +12,7 @@ import RegisterHeader from '../components/RegisterHeader';
 type Props = NativeStackScreenProps<AuthStackParamList, 'RegisterTerms'>;
 
 const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
-  const { id, password, name, phone, userType, nickname, address, addressDetail, storeName } = route.params;
+  const { id, password, name, phone, userType, nickname, address, addressDetail, storeName, birth } = route.params;
 
   const getTerms = (userType: 'owner' | 'consumer') => [
     { key: 'terms', label: '이용약관 필수 동의', required: true, detail: '상세 내용' },
@@ -78,8 +78,8 @@ const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
           loginId: id,
           password,
           name,
-          nickname: nickname,
           phoneNumber: phone,
+          birth,
           storeId: 1,
         };
 
@@ -98,6 +98,7 @@ const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
           name,
           nickname: nickname,
           phoneNumber: phone,
+          birth,
         };
         console.log('Customer 회원가입 요청:', {
           url,

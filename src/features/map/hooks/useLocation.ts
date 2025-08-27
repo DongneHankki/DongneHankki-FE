@@ -26,18 +26,18 @@ export const useLocation = () => {
           }
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
-              } else {
-          // iOS에서는 Geolocation.requestAuthorization을 사용
-          return new Promise((resolve) => {
-            Geolocation.requestAuthorization('whenInUse').then((status) => {
-              console.log('iOS 위치 권한 상태:', status);
-              resolve(status === 'granted');
-            }).catch((error) => {
-              console.error('iOS 권한 요청 에러:', error);
-              resolve(false);
-            });
+      } else {
+        // iOS에서는 Geolocation.requestAuthorization을 사용
+        return new Promise((resolve) => {
+          Geolocation.requestAuthorization('whenInUse').then((status) => {
+            console.log('iOS 위치 권한 상태:', status);
+            resolve(status === 'granted');
+          }).catch((error) => {
+            console.error('iOS 권한 요청 에러:', error);
+            resolve(false);
           });
-        }
+        });
+      }
     } catch (err) {
       console.error('위치 권한 요청 에러:', err);
       setError('위치 권한을 요청할 수 없습니다.');

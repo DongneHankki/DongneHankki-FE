@@ -4,68 +4,35 @@ import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './AuthNavigator';
 import CustomerNavigator from './CustomerNavigator';
 import OwnerNavigator from './OwnerNavigator';
-import { getTokenFromLocal } from '../shared/utils/tokenUtil';
+import LogoScreen from '../features/auth/screens/LogoScreen';
 import { useAuthStore } from '../shared/store/authStore';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Zustand store에서 인증 상태 가져오기
-  const { isAuthenticated, role, accessToken } = useAuthStore();
+  const [initialRoute, setInitialRoute] = useState<string>('Auth');
+  const { isAuthenticated, role } = useAuthStore();
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const token = await getTokenFromLocal();
-      
-      if (token && token.accessToken && token.refreshToken) {
-        console.log('인증된 사용자:', { role: token.role, userId: token.userId });
-        // Zustand store 업데이트
-        useAuthStore.getState().setAuth({
-          role: token.role || 'customer',
-          userId: token.userId || '',
-          loginId: token.loginId || '',
-          accessToken: token.accessToken,
-          refreshToken: token.refreshToken,
-        });
+    // 인증 상태에 따라 초기 라우트 설정
+    if (isAuthenticated) {
+      if (role === 'owner') {
+        setInitialRoute('Owner');
       } else {
-        console.log('인증되지 않은 사용자 - 로그인 화면으로 이동');
-
-        useAuthStore.getState().clearAuth();
+        setInitialRoute('Customer');
       }
-    } catch (error) {
-      console.error('인증 상태 확인 실패:', error);
-      useAuthStore.getState().clearAuth();
-    } finally {
-      setIsLoading(false);
+    } else {
+      setInitialRoute('Auth');
     }
-  };
-
-  if (isLoading) {
-    return null;
-  }
-
-  const getInitialRouteName = () => {
-    if (!isAuthenticated || !accessToken) {
-      return 'Auth';
-    }
-    if (role === 'owner') {
-      return 'Owner';
-    }
-    return 'Customer';
-  };
+  }, [isAuthenticated, role]);
 
   return (
     <NavigationContainer>
       <Stack.Navigator 
         screenOptions={{ headerShown: false }}
-        initialRouteName={getInitialRouteName()}
+        initialRouteName="Logo"
       >
+        <Stack.Screen name="Logo" component={LogoScreen} />
         <Stack.Screen name="Auth" component={AuthNavigator} />
         <Stack.Screen name="Customer" component={CustomerNavigator} />
         <Stack.Screen name="Owner" component={OwnerNavigator} />

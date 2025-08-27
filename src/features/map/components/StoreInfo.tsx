@@ -8,71 +8,8 @@ interface StoreInfoProps {
   operatingHours: string;
   rating: number;
   onSubscribe: () => void;
+  industryCode?: number;
 }
-
-// 더미 데이터를 StoreInfo 컴포넌트로 이동
-export const storeData = [
-  {
-    storeId: 1,
-    name: "맛있는 카페",
-    address: "서울시 강남구 테헤란로 123",
-    industryCode: "2502", // 커피 전문점
-  },
-  {
-    storeId: 2,
-    name: "스타벅스 강남점",
-    address: "서울시 강남구 역삼동 456",
-    industryCode: "2502", // 커피 전문점
-  },
-  {
-    storeId: 3,
-    name: "이탈리안 레스토랑",
-    address: "서울시 강남구 논현동 789",
-    industryCode: "2305", // 서양식전문점
-  },
-  {
-    storeId: 4,
-    name: "분식집",
-    address: "서울시 강남구 삼성동 321",
-    industryCode: "2301", // 일반 음식점
-  },
-  {
-    storeId: 5,
-    name: "고급 스시집",
-    address: "서울시 강남구 청담동 654",
-    industryCode: "2303", // 일식전문점
-  },
-  {
-    storeId: 6,
-    name: "치킨집",
-    address: "서울시 강남구 신사동 987",
-    industryCode: "2309", // 치킨전문점
-  },
-  {
-    storeId: 7,
-    name: "베이커리",
-    address: "서울시 강남구 압구정동 147",
-    industryCode: "2501", // 제과
-  },
-  {
-    storeId: 8,
-    name: "중국집",
-    address: "서울시 강남구 도산동 258",
-    industryCode: "2302", // 중식전문점
-  },
-  {
-    storeId: 9,
-    name: "피자집",
-    address: "서울시 강남구 신사동 369",
-    industryCode: "2305", // 서양식전문점
-  },
-  {
-    storeId: 10,
-    name: "커피빈",
-    address: "서울시 강남구 역삼동 741",
-    industryCode: "2502", // 커피 전문점
-  },
-];
 
 const StoreInfo: React.FC<StoreInfoProps> = ({
   storeName,
@@ -80,18 +17,62 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
   operatingHours,
   rating,
   onSubscribe,
+  industryCode,
 }) => {
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <Icon
-        key={index}
-        name="star"
-        size={16}
-        color={index < rating ? '#FF9500' : '#E0E0E0'}
-        style={styles.star}
-      />
-    ));
+  // 디버깅 로그 추가
+  console.log('StoreInfo - props 받음:', {
+    storeName,
+    location,
+    operatingHours,
+    rating,
+    industryCode
+  });
+
+  // 별점 렌더링
+  const stars = Array.from({ length: 5 }, (_, index) => (
+    <Icon
+      key={index}
+      name="star"
+      size={16}
+      color={index < rating ? '#FF9500' : '#E0E0E0'}
+      style={styles.star}
+    />
+  ));
+
+  // 업종 아이콘
+  let industryIcon = 'restaurant';
+  if (industryCode) {
+    // 음식점 관련 업종
+    if ([2301, 2302, 2303, 2305, 2309, 2310, 2601].includes(industryCode)) {
+      industryIcon = 'restaurant';
+    }
+    // 카페/제과 관련 업종
+    else if ([2501, 2502].includes(industryCode)) {
+      industryIcon = 'local-cafe';
+    }
+    // 식료품점 관련 업종
+    else if ([2102, 2103, 2104, 2105, 2201].includes(industryCode)) {
+      industryIcon = 'store';
+    }
+    // 소매 상점 관련 업종 (5201, 5202로 수정)
+    else if ([5201, 5202].includes(industryCode)) {
+      industryIcon = 'shopping-bag';
+    }
+  }
+
+  // 구독 버튼 클릭 핸들러
+  const handleSubscribe = () => {
+    onSubscribe();
   };
+
+  // 매장명 (긴 텍스트 처리)
+  const displayStoreName = storeName && storeName.length > 20 ? `${storeName.substring(0, 20)}...` : (storeName || '매장명 없음');
+
+  // 위치 정보
+  const displayLocation = location && location.length > 30 ? `${location.substring(0, 30)}...` : (location || '주소 정보 없음');
+
+  // 영업시간 정보
+  const displayOperatingHours = operatingHours || '영업 시간 정보 없음';
 
   return (
     <View style={styles.container}>
@@ -99,29 +80,32 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
       <View style={styles.infoContainer}>
         {/* 상호명과 아이콘 */}
         <View style={styles.nameRow}>
-          <Text style={styles.storeName}>{storeName}</Text>
-          <Icon name="restaurant" size={16} color="#000000" />
+          <Text style={styles.storeName} numberOfLines={1}>{displayStoreName}</Text>
+          <Icon name={industryIcon} size={16} color="#000000" />
         </View>
 
         {/* 위치 정보 */}
-        <Text style={styles.location}>{location}</Text>
+        <Text style={styles.location} numberOfLines={1}>{displayLocation}</Text>
 
-        {/* 운영 시간 */}
-        <Text style={styles.operatingHours}>{operatingHours}</Text>
+        {/* 영업 시간 */}
+        <Text style={styles.operatingHours}>{displayOperatingHours}</Text>
 
         {/* 별점 */}
         <View style={styles.ratingContainer}>
-          {renderStars(rating)}
+          {stars}
         </View>
 
         {/* 구독 버튼 */}
-        <TouchableOpacity style={styles.subscribeButton} onPress={onSubscribe}>
-          <Text style={styles.subscribeText}>#구독</Text>
+        <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
+          <Text style={styles.subscribeText}>팔로우</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
+
+// 성능 디버깅을 위한 displayName 추가
+StoreInfo.displayName = 'StoreInfo';
 
 const styles = StyleSheet.create({
   container: {
@@ -131,14 +115,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   infoContainer: {
     flex: 1,

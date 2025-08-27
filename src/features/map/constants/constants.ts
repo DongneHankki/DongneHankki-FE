@@ -1,12 +1,12 @@
-// 탭 관련 상수
+// 탭 상수
 export const TABS = [
     { id: 'restaurant', label: '식당', icon: 'restaurant', iconType: 'material' },
     { id: 'cafe', label: '카페', icon: 'local-cafe', iconType: 'material' },
     { id: 'foodstore', label: '식료품점', icon: 'store', iconType: 'material' },
-    { id: 'retail', label: '소매 상점', icon: 'store', iconType: 'material' },
+    { id: 'retail', label: '소매 상점', icon: 'shopping-basket', iconType: 'material' },
   ];
   
-  // 별점 관련 상수
+  // 별점 상수
   export const RATING_OPTIONS = [
     { value: 5, label: '5점 이상' },
     { value: 4, label: '4점 이상' },
@@ -15,7 +15,18 @@ export const TABS = [
     { value: 1, label: '1점 이상' },
   ];
   
-  // 시간 범위 상수
+  // 요일 상수
+  export const DAY_OPTIONS = [
+    { value: 'monday', label: '월' },
+    { value: 'tuesday', label: '화' },
+    { value: 'wednesday', label: '수' },
+    { value: 'thursday', label: '목' },
+    { value: 'friday', label: '금' },
+    { value: 'saturday', label: '토' },
+    { value: 'sunday', label: '일' },
+  ];
+
+  // 시간 상수
   export const TIME_RANGE_OPTIONS = [
     { value: 'all', label: '전체' },
     { value: 'morning', label: '오전 (06:00-12:00)' },

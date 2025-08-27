@@ -52,7 +52,7 @@ export const checkBusinessNumber = async (businessNumber: string): Promise<Store
     // 사업자 등록번호에서 하이픈 제거
     const cleanBusinessNumber = businessNumber.replace(/-/g, '');
     
-    const response = await axios.get(`${API_BASE_URL}/api/stores/business/${cleanBusinessNumber}`, {
+    const response = await axios.get(`${API_BASE_URL}/api/stores?businessNumber=${cleanBusinessNumber}`, {
       timeout: 10000,
     });
 
