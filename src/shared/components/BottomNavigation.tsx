@@ -12,6 +12,7 @@ import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 
 // Owner 스크린들 import
 import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
+import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
@@ -37,7 +38,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     } else {
       return [
         { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: FeedScreen },
+        { name: 'Subscribe', component: OwnerFeedScreen },
         { name: 'Management', component: StoreManagementScreen },
         { name: 'Profile', component: ProfileScreen },
       ];
