@@ -19,14 +19,6 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
   onSubscribe,
   industryCode,
 }) => {
-  // 디버깅 로그 추가
-  console.log('StoreInfo - props 받음:', {
-    storeName,
-    location,
-    operatingHours,
-    rating,
-    industryCode
-  });
 
   // 별점 렌더링
   const stars = Array.from({ length: 5 }, (_, index) => (

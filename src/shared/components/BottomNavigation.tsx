@@ -3,15 +3,16 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 
 // Customer 스크린들 import
 import MapScreen from '../../features/map/screens/MapScreen';
 import RecommendScreen from '../../features/recommend/screens/RecommendScreen';
-import FeedScreen from '../../features/sns/screens/FeedScreen';
+import CustomerMain from '../../features/sns/customer/screens/CustomerMain';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 
 // Owner 스크린들 import
-// StoreManagementScreen은 제거됨
+import StoreManagementScreen from '../../features/manage/screens/StoreManagementScreen';
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
@@ -30,14 +31,15 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     if (userType === 'customer') {
       return [
         { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: FeedScreen },
+        { name: 'Subscribe', component: CustomerMain },
         { name: 'Recommend', component: RecommendScreen },
         { name: 'Profile', component: ProfileScreen },
       ];
     } else {
       return [
         { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: FeedScreen },
+        { name: 'Subscribe', component: CustomerMain },
+        { name: 'StoreManagement', component: StoreManagementScreen },
         { name: 'Profile', component: ProfileScreen },
       ];
     }
@@ -58,7 +60,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
 
     // Owner 전용 아이콘
     const OWNER_ICONS: any[] = [
-      // Management는 제거됨
+      { name: 'StoreManagement', label: '점포 관리', icon: 'note', activeIcon: 'note', type: 'SimpleLineIcons' },
     ];
 
     // 모든 아이콘을 합침
@@ -75,6 +77,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
         return <FontAwesome name={iconName} size={size} color={color} />;
       } else if (tabIcon.type === 'MaterialCommunityIcons') {
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+      } else if (tabIcon.type === 'SimpleLineIcons') {
+        return <SimpleLineIcons name={iconName} size={size} color={color} />;
       }
     }
 
@@ -113,6 +117,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
             tabBarLabel: screen.name === 'Map' ? '지도' : 
                          screen.name === 'Subscribe' ? 'SNS' : 
                          screen.name === 'Recommend' ? '추천' : 
+                         screen.name === 'StoreManagement' ? '점포 관리' :
                          screen.name === 'Profile' ? '내 정보' : screen.name,
           }}
         />

@@ -2,24 +2,48 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import { Review } from '../services/reviewAPI';
+
 interface ReviewCardProps {
-  reviewerName?: string;
-  reviewDate?: string;
-  reviewText?: string;
-  reviewerImage?: any;
+  review: Review;
 }
 
 const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
-  reviewerName = '동네스타',
-  reviewDate = '어제',
-  reviewText = '가족단위 손님도 많고 혼밥하러 오시는 분들도 많은 곳입니다! 잔치국수가 정말 맛있어요! 그리고 사장님이 너무 친절하시고 좋아요!',
-  reviewerImage = require('../../../shared/images/profile.png')
+  review
 }) => {
+  // review가 undefined인 경우 처리
+  if (!review) {
+    console.log('ReviewCard: review가 undefined입니다.');
+    return null;
+  }
+
+  console.log('ReviewCard 받은 데이터:', JSON.stringify(review, null, 2));
+  
+  const { nickname, content, scope, createdAt, userImage } = review;
+  
+  // nickname을 하드코딩으로 설정
+  const displayName = '호연';
+  
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return '어제';
+    if (diffDays < 7) return `${diffDays}일 전`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+    return date.toLocaleDateString('ko-KR');
+  };
+
+  const reviewDate = formatDate(createdAt);
+  const reviewerImage = userImage ? { uri: userImage } : require('../../../shared/images/profile.png');
   const [isModalVisible, setIsModalVisible] = useState(false);
   
   // 텍스트를 2줄로 제한하고 넘어가면 ... 추가
-  const truncatedText = reviewText.length > 60 ? reviewText.substring(0, 60) + '...' : reviewText;
-  const isTextTruncated = reviewText.length > 60;
+  const truncatedText = content.length > 60 ? content.substring(0, 60) + '...' : content;
+  const isTextTruncated = content.length > 60;
 
   const handleCardPress = () => {
     if (isTextTruncated) {
@@ -37,11 +61,21 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
         <View style={styles.reviewHeader}>
           <Image source={reviewerImage} style={styles.reviewerImage} />
           <View style={styles.reviewerInfo}>
-            <Text style={styles.reviewerName}>{reviewerName}</Text>
+            <Text style={styles.reviewerName}>{displayName}</Text>
             <Text style={styles.reviewDate}>{reviewDate}</Text>
           </View>
         </View>
         <View style={styles.reviewContent}>
+          <View style={styles.ratingContainer}>
+            {Array.from({ length: 5 }, (_, index) => (
+              <Icon
+                key={index}
+                name={index < scope ? 'star' : 'star-border'}
+                size={12}
+                color={index < scope ? '#FFD700' : '#ccc'}
+              />
+            ))}
+          </View>
           <Text style={styles.reviewText}>
             {truncatedText}
           </Text>
@@ -60,7 +94,7 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
                 <View style={styles.modalProfileInfo}>
                   <Image source={reviewerImage} style={styles.modalReviewerImage} />
                   <View style={styles.modalReviewerInfo}>
-                    <Text style={styles.modalReviewerName}>{reviewerName}</Text>
+                    <Text style={styles.modalReviewerName}>{displayName}</Text>
                     <Text style={styles.modalReviewDate}>{reviewDate}</Text>
                   </View>
                 </View>
@@ -73,7 +107,7 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
               </View>
             
             <Text style={styles.modalReviewText}>
-              {reviewText}
+              {content}
             </Text>
           </View>
         </View>
@@ -122,8 +156,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   reviewContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    marginBottom: 4,
   },
   reviewImagePlaceholder: {
     width: 60,

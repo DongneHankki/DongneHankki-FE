@@ -6,13 +6,44 @@ interface Store {
   latitude: number;
   longitude: number;
   likeCount: number;
+  sigun: string;
   address: string;
   industryCode: number;
+  businessRegistrationNumber: number;
+  avgStar: number;
+  operatingHours: OperatingHours[];
+  owner: Owner;
+  menus: any[];
+  reviews: any[];
   // 가공된 데이터 필드들
   displayName?: string;
   displayAddress?: string;
   operatingHoursText?: string;
   rating?: number;
+}
+
+interface Time {
+  hour: number;
+  minute: number;
+  second: number;
+  nano: number;
+}
+
+interface OperatingHours {
+  dayOfWeek: string;
+  openTime: Time;
+  closeTime: Time;
+}
+
+interface Owner {
+  userId: number;
+  loginId: string;
+  nickname: string;
+  name: string;
+  phoneNumber: string;
+  role: string;
+  storeId: number;
+  birth: string;
 }
 
 interface ClusterMarker {

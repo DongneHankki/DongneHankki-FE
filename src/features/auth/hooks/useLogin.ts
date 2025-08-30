@@ -3,7 +3,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginAPI, LoginRequest } from '../services/LoginAPI';
 import { saveTokens } from '../../../shared/utils/tokenUtil';
-import { getRoleFromToken } from '../../../shared/utils/jwtUtil';
+import { getRoleFromToken, getUserIdFromToken } from '../../../shared/utils/jwtUtil';
+import { useAuthStore } from '../../../shared/store/authStore';
 
 export function validateLogin(id: string, password: string): string | null {
   if (!id) return '아이디를 입력하세요.';
@@ -37,10 +38,25 @@ export const useLogin = (navigation: NativeStackNavigationProp<any>) => {
       
       if (response.status === 'success' && response.data) {
         
-        await saveTokens(response.data.accessToken, response.data.refreshToken);
+        await saveTokens(response.data.accessToken, response.data.refreshToken, id);
         
         const role = getRoleFromToken(response.data.accessToken);
-        console.log('로그인 성공, role:', role);
+        const userId = getUserIdFromToken(response.data.accessToken);
+        
+        console.log('=== 로그인 성공 ===');
+        console.log('role:', role);
+        console.log('userId:', userId);
+        console.log('userId 타입:', typeof userId);
+        console.log('response.data:', response.data);
+        
+        // authStore 상태 확인
+        console.log('=== authStore 상태 확인 ===');
+        const authStore = useAuthStore.getState();
+        console.log('현재 authStore 상태:', {
+          role: authStore.role,
+          userId: authStore.userId,
+          isAuthenticated: authStore.isAuthenticated
+        });
         
         if (role === 'owner') {
           navigation.reset({ routes: [{ name: 'Owner' }] });

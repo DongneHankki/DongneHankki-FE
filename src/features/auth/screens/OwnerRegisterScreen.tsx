@@ -19,6 +19,7 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
   const [addressDetail, setAddressDetail] = useState('');
   const [businessNumberError, setBusinessNumberError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [storeId, setStoreId] = useState<number | null>(null);
   
   const route = useRoute<RouteProp<AuthStackParamList, 'OwnerRegister'>>();
   const { id, password, name, userType, phone, birth } = route.params;
@@ -47,6 +48,7 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
       setStoreName(storeData.name);
       setAddress(storeData.address);
       setAddressDetail(storeData.address);
+      setStoreId(storeData.storeId);
       
       Alert.alert('성공', '사업자 등록번호가 확인되었습니다.');
     } catch (error: any) {
@@ -76,7 +78,8 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
         address,
         addressDetail,
         storeName,
-        birth
+        birth,
+        storeId
       });
     }
   };
