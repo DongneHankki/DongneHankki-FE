@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { Review } from '../services/reviewAPI';
+import { Review, deleteReview } from '../services/reviewAPI';
+import { useAuthStore } from '../../../shared/store/authStore';
+import { useMarketStore } from '../store/marketStore';
+import { formatTimeDiff } from '../utils/TimeDiff';
 
 interface ReviewCardProps {
   review: Review;
+  onReviewDeleted?: () => void;
 }
 
 const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
-  review
+  review,
+  onReviewDeleted
 }) => {
   // review가 undefined인 경우 처리
   if (!review) {
@@ -19,27 +24,32 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
 
   console.log('ReviewCard 받은 데이터:', JSON.stringify(review, null, 2));
   
-  const { nickname, content, scope, createdAt, userImage } = review;
+  const { id, reviewId, nickname, content, scope, createdAt, userImage } = review;
+  const { userId: currentUserId } = useAuthStore();
+  const { storeDetail } = useMarketStore();
+  
+  // reviewId 또는 id 중 존재하는 것을 사용
+  const actualReviewId = reviewId || id;
+  
+  console.log('리뷰 ID 확인:', { id, reviewId, actualReviewId, storeDetail: storeDetail?.storeId });
   
   // nickname을 하드코딩으로 설정
   const displayName = '호연';
   
+  // 현재 사용자가 매장 소유자인지 확인
+  const isOwner = storeDetail?.owner?.userId === parseInt(currentUserId || '0');
+  
+  console.log('소유자 확인:', { 
+    currentUserId, 
+    ownerUserId: storeDetail?.owner?.userId, 
+    isOwner 
+  });
+  
   // 날짜 포맷팅
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return '어제';
-    if (diffDays < 7) return `${diffDays}일 전`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
-    return date.toLocaleDateString('ko-KR');
-  };
-
-  const reviewDate = formatDate(createdAt);
+  const reviewDate = formatTimeDiff(createdAt);
   const reviewerImage = userImage ? { uri: userImage } : require('../../../shared/images/profile.png');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // 텍스트를 2줄로 제한하고 넘어가면 ... 추가
   const truncatedText = content.length > 60 ? content.substring(0, 60) + '...' : content;
@@ -49,6 +59,57 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
     if (isTextTruncated) {
       setIsModalVisible(true);
     }
+  };
+
+  const handleDeleteReview = async () => {
+    console.log('=== 리뷰 삭제 시도 ===');
+    console.log('storeDetail:', storeDetail);
+    console.log('storeDetail?.storeId:', storeDetail?.storeId);
+    console.log('actualReviewId:', actualReviewId);
+    console.log('review 전체 데이터:', review);
+    
+    if (!storeDetail?.storeId || !actualReviewId) {
+      console.log('삭제 조건 실패:', {
+        hasStoreId: !!storeDetail?.storeId,
+        hasReviewId: !!actualReviewId,
+        storeId: storeDetail?.storeId,
+        reviewId: actualReviewId
+      });
+      Alert.alert('오류', '매장 정보 또는 리뷰 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    Alert.alert(
+      '리뷰 삭제',
+      '정말로 이 리뷰를 삭제하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              console.log('삭제 API 호출:', {
+                storeId: storeDetail.storeId,
+                reviewId: actualReviewId
+              });
+              await deleteReview(storeDetail.storeId, actualReviewId);
+              Alert.alert('성공', '리뷰가 삭제되었습니다.');
+              onReviewDeleted?.(); // 부모 컴포넌트에 삭제 완료 알림
+            } catch (error: any) {
+              console.error('삭제 실패:', error);
+              Alert.alert('오류', error.message || '리뷰 삭제에 실패했습니다.');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -64,6 +125,19 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
             <Text style={styles.reviewerName}>{displayName}</Text>
             <Text style={styles.reviewDate}>{reviewDate}</Text>
           </View>
+          {isOwner && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeleteReview}
+              disabled={isDeleting}
+            >
+              <Icon 
+                name="delete" 
+                size={18} 
+                color={isDeleting ? '#ccc' : '#666'} 
+              />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.reviewContent}>
           <View style={styles.ratingContainer}>
@@ -105,6 +179,17 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
                   <Icon name="close" size={24} color="#000" />
                 </TouchableOpacity>
               </View>
+            
+            <View style={styles.modalRatingContainer}>
+              {Array.from({ length: 5 }, (_, index) => (
+                <Icon
+                  key={index}
+                  name={index < scope ? 'star' : 'star-border'}
+                  size={16}
+                  color={index < scope ? '#FFD700' : '#ccc'}
+                />
+              ))}
+            </View>
             
             <Text style={styles.modalReviewText}>
               {content}
@@ -154,6 +239,10 @@ const styles = StyleSheet.create({
   reviewDate: {
     color: '#666',
     fontSize: 12,
+  },
+  deleteButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   reviewContent: {
     flexDirection: 'column',
@@ -232,6 +321,10 @@ const styles = StyleSheet.create({
   modalReviewText: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  modalRatingContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
   },
 });
 
