@@ -5,10 +5,15 @@ import CustomerPostScreen from '../features/sns/customer/screens/CustomerPostScr
 
 const Stack = createNativeStackNavigator();
 
+// BottomNavigation을 래핑하는 컴포넌트
+const CustomerMainScreen = () => {
+  return <BottomNavigation userType="customer" />;
+};
+
 const CustomerNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="CustomerMain" component={() => <BottomNavigation userType="customer" />} />
+      <Stack.Screen name="CustomerMain" component={CustomerMainScreen} />
       <Stack.Screen name="CustomerPost" component={CustomerPostScreen} />
     </Stack.Navigator>
   );

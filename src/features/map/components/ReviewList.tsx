@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { getReviews, Review } from '../services/reviewAPI';
 import ReviewCard from './ReviewCard';
 import ReviewWriteModal from './ReviewWriteModal';
+import { useAuthStore } from '../../../shared/store/authStore';
 
 interface ReviewListProps {
   storeId: number;
@@ -14,6 +15,8 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isWriteModalVisible, setIsWriteModalVisible] = useState(false);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const { userId: currentUserId } = useAuthStore();
 
   const loadReviews = async () => {
     setIsLoading(true);
@@ -22,6 +25,12 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
       console.log('받아온 리뷰 데이터:', JSON.stringify(reviewData, null, 2));
       console.log('리뷰 개수:', reviewData.length);
       setReviews(reviewData);
+      
+      // 현재 사용자의 기존 리뷰 찾기
+      const userReview = reviewData.find(review => review.userId === parseInt(currentUserId || '0'));
+      setExistingReview(userReview || null);
+      
+      console.log('현재 사용자 리뷰:', userReview);
     } catch (error: any) {
       console.error('리뷰 로드 오류:', error);
       Alert.alert('오류', '리뷰를 불러오는데 실패했습니다.');
@@ -38,16 +47,28 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
     loadReviews(); // 리뷰 목록 새로고침
   };
 
+  const handleWriteButtonPress = () => {
+    if (existingReview) {
+      // 기존 리뷰가 있으면 수정 모드로 모달 열기
+      setIsWriteModalVisible(true);
+    } else {
+      // 기존 리뷰가 없으면 새로 작성
+      setIsWriteModalVisible(true);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>리뷰 ({reviews.length})</Text>
         <TouchableOpacity
           style={styles.writeButton}
-          onPress={() => setIsWriteModalVisible(true)}
+          onPress={handleWriteButtonPress}
         >
           <Icon name="edit" size={20} color="#2E1404" />
-          <Text style={styles.writeButtonText}>리뷰 작성</Text>
+          <Text style={styles.writeButtonText}>
+            {existingReview ? '리뷰 수정' : '리뷰 작성'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -72,7 +93,13 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
             console.log(`리뷰 ${index} 타입:`, typeof review);
             console.log(`리뷰 ${index}가 null인가?`, review === null);
             console.log(`리뷰 ${index}가 undefined인가?`, review === undefined);
-            return <ReviewCard key={review?.id || index} review={review} />;
+            return (
+              <ReviewCard 
+                key={review?.id || index} 
+                review={review} 
+                onReviewDeleted={loadReviews}
+              />
+            );
           })}
         </ScrollView>
       )}
@@ -83,6 +110,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
         storeId={storeId}
         userId={userId}
         onReviewCreated={handleReviewCreated}
+        existingReview={existingReview}
       />
     </View>
   );

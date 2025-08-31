@@ -121,22 +121,49 @@ const StoreDetail = React.memo(({ store, onBack }) => {
     setIsWriteModalVisible(false);
   }, []);
 
-  const handleReviewCreated = useCallback(async () => {
-    // 리뷰 작성 후 API에서 다시 store 상세 정보 가져오기
+  // 리뷰 삭제 후 매장 상세 정보 새로고침
+  const handleReviewDeleted = useCallback(async () => {
+    if (!store?.storeId) return;
+    
     try {
-      console.log('리뷰 새로고침 시작');
-      
-      if (!store?.storeId) return;
-      
+      console.log('리뷰 삭제 후 매장 상세 정보 새로고침 시작');
       setLoading(true);
       const response = await getStoreDetail(store.storeId);
       const storeData = response.data || response;
-      
       setStoreDetail(storeData);
-      console.log('리뷰 새로고침 완료, 새로운 storeDetail 저장됨');
-      
+      console.log('매장 상세 정보 새로고침 완료');
     } catch (error) {
-      console.error('리뷰 새로고침 실패:', error);
+      console.error('매장 상세 정보 새로고침 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [store?.storeId, setStoreDetail, setLoading]);
+
+  // 현재 사용자의 기존 리뷰 찾기
+  const existingReview = useMemo(() => {
+    if (!storeDetail?.reviews || !userId) return null;
+    
+    const userReview = storeDetail.reviews.find(review => 
+      review.userId === parseInt(userId)
+    );
+    
+    console.log('현재 사용자 기존 리뷰:', userReview);
+    return userReview || null;
+  }, [storeDetail?.reviews, userId]);
+
+  // 리뷰 작성/수정 후 매장 상세 정보 새로고침
+  const handleReviewCreated = useCallback(async () => {
+    if (!store?.storeId) return;
+    
+    try {
+      console.log('리뷰 작성/수정 후 매장 상세 정보 새로고침 시작');
+      setLoading(true);
+      const response = await getStoreDetail(store.storeId);
+      const storeData = response.data || response;
+      setStoreDetail(storeData);
+      console.log('매장 상세 정보 새로고침 완료');
+    } catch (error) {
+      console.error('매장 상세 정보 새로고침 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -211,11 +238,15 @@ const StoreDetail = React.memo(({ store, onBack }) => {
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {sortedReviews.map((review, index) => (
-          <ReviewCard key={review?.reviewId || review?.id || index} review={review} />
+          <ReviewCard 
+            key={review?.reviewId || review?.id || index} 
+            review={review} 
+            onReviewDeleted={handleReviewDeleted}
+          />
         ))}
       </ScrollView>
     );
-  }, [storeDetail?.reviews, loading, userId]);
+  }, [storeDetail?.reviews, loading, userId, handleReviewDeleted]);
 
   // 메뉴 아이템들을 useMemo로 최적화
   const menuItems = useMemo(() => (
@@ -316,7 +347,9 @@ const StoreDetail = React.memo(({ store, onBack }) => {
           {!isOwner() && (
             <TouchableOpacity style={styles.writeReviewButton} onPress={handleOpenWriteModal}>
               <Icon name="edit" size={16} color="#2E1404" />
-              <Text style={styles.writeReviewButtonText}>리뷰 작성</Text>
+              <Text style={styles.writeReviewButtonText}>
+                {existingReview ? '리뷰 수정' : '리뷰 작성'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -371,6 +404,7 @@ const StoreDetail = React.memo(({ store, onBack }) => {
         storeId={storeDetail?.storeId || store?.storeId || 1}
         userId={userId ? parseInt(userId) : 1}
         onReviewCreated={handleReviewCreated}
+        existingReview={existingReview}
       />
     </ScrollView>
   );

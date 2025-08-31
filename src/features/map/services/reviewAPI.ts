@@ -4,6 +4,7 @@ import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 export interface Review {
   id: number;
+  reviewId?: number; // API 응답에서 사용할 수 있는 필드
   userId: number;
   nickname: string;
   content: string;
@@ -121,5 +122,100 @@ export const createReview = async (storeId: number, reviewData: CreateReviewRequ
   } catch (error: any) {
     console.error('리뷰 작성 오류:', error);
     throw new Error('리뷰 작성 중 오류가 발생했습니다.');
+  }
+};
+
+// 리뷰 삭제
+export const deleteReview = async (storeId: number, reviewId: number): Promise<void> => {
+  try {
+    const tokens = await getTokenFromLocal();
+    const headers = tokens?.accessToken ? {
+      'Authorization': `Bearer ${tokens.accessToken}`,
+      'Content-Type': 'application/json',
+    } : {
+      'Content-Type': 'application/json',
+    };
+
+    console.log('리뷰 삭제 요청:', {
+      url: `${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`,
+      storeId,
+      reviewId,
+      headers
+    });
+
+    const response = await axios.delete(`${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`, {
+      headers,
+      timeout: 10000,
+    });
+
+    console.log('리뷰 삭제 응답:', response.data);
+
+    if (response.data.status === 'success') {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || '리뷰 삭제에 실패했습니다.');
+    }
+  } catch (error: any) {
+    console.error('리뷰 삭제 오류:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+    } else if (error.response?.status === 403) {
+      throw new Error('리뷰를 삭제할 권한이 없습니다.');
+    } else if (error.response?.status === 404) {
+      throw new Error('리뷰를 찾을 수 없습니다.');
+    } else if (error.response?.status === 500) {
+      throw new Error('서버 오류가 발생했습니다.');
+    } else {
+      throw new Error(`리뷰 삭제 중 오류가 발생했습니다: ${error.message}`);
+    }
+  }
+};
+
+// 리뷰 수정
+export const updateReview = async (storeId: number, reviewId: number, reviewData: CreateReviewRequest): Promise<void> => {
+  try {
+    const tokens = await getTokenFromLocal();
+    const headers = tokens?.accessToken ? {
+      'Authorization': `Bearer ${tokens.accessToken}`,
+      'Content-Type': 'application/json',
+    } : {
+      'Content-Type': 'application/json',
+    };
+
+    console.log('리뷰 수정 요청:', {
+      url: `${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`,
+      storeId,
+      reviewId,
+      reviewData,
+      headers
+    });
+
+    const response = await axios.patch(`${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`, reviewData, {
+      headers,
+      timeout: 10000,
+    });
+
+    console.log('리뷰 수정 응답:', response.data);
+
+    if (response.data.status === 'success') {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || '리뷰 수정에 실패했습니다.');
+    }
+  } catch (error: any) {
+    console.error('리뷰 수정 오류:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+    } else if (error.response?.status === 403) {
+      throw new Error('리뷰를 수정할 권한이 없습니다.');
+    } else if (error.response?.status === 404) {
+      throw new Error('리뷰를 찾을 수 없습니다.');
+    } else if (error.response?.status === 500) {
+      throw new Error('서버 오류가 발생했습니다.');
+    } else {
+      throw new Error(`리뷰 수정 중 오류가 발생했습니다: ${error.message}`);
+    }
   }
 };

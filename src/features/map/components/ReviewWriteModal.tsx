@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { createReview, CreateReviewRequest } from '../services/reviewAPI';
+import { createReview, updateReview, CreateReviewRequest, Review } from '../services/reviewAPI';
 
 interface ReviewWriteModalProps {
   visible: boolean;
@@ -9,6 +9,7 @@ interface ReviewWriteModalProps {
   storeId: number;
   userId: number;
   onReviewCreated: () => void;
+  existingReview?: Review | null; // 기존 리뷰 정보
 }
 
 const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
@@ -16,11 +17,26 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
   onClose,
   storeId,
   userId,
-  onReviewCreated
+  onReviewCreated,
+  existingReview
 }) => {
   const [content, setContent] = useState('');
   const [scope, setScope] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // 기존 리뷰가 있으면 수정 모드로 설정
+  useEffect(() => {
+    if (existingReview) {
+      setContent(existingReview.content);
+      setScope(existingReview.scope);
+      setIsEditMode(true);
+    } else {
+      setContent('');
+      setScope(5);
+      setIsEditMode(false);
+    }
+  }, [existingReview, visible]);
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -36,20 +52,35 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
         scope
       };
 
-      console.log('리뷰 작성 요청:', {
-        storeId,
-        reviewData
-      });
+      if (isEditMode && existingReview) {
+        // 수정 모드
+        console.log('리뷰 수정 요청:', {
+          storeId,
+          reviewId: existingReview.id,
+          reviewData
+        });
 
-      await createReview(storeId, reviewData);
-      Alert.alert('성공', '리뷰가 작성되었습니다.');
+        await updateReview(storeId, existingReview.id, reviewData);
+        Alert.alert('성공', '리뷰가 수정되었습니다.');
+      } else {
+        // 작성 모드
+        console.log('리뷰 작성 요청:', {
+          storeId,
+          reviewData
+        });
+
+        await createReview(storeId, reviewData);
+        Alert.alert('성공', '리뷰가 작성되었습니다.');
+      }
+
       setContent('');
       setScope(5);
+      setIsEditMode(false);
       onReviewCreated(); // 리뷰 목록 새로고침 콜백 호출
       onClose();
     } catch (error: any) {
-      console.error('리뷰 작성 오류:', error);
-      Alert.alert('오류', error.message || '리뷰 작성에 실패했습니다.');
+      console.error('리뷰 처리 오류:', error);
+      Alert.alert('오류', error.message || '리뷰 처리에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +112,9 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>리뷰 작성</Text>
+            <Text style={styles.modalTitle}>
+              {isEditMode ? '리뷰 수정' : '리뷰 작성'}
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Icon name="close" size={24} color="#000" />
             </TouchableOpacity>
@@ -102,7 +135,7 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
           </View>
 
           <View style={styles.ratingSection}>
-            <Text style={styles.ratingLabel}>평점</Text>
+            <Text style={styles.ratingLabel}>별점</Text>
             <View style={styles.starsContainer}>
               {renderStars()}
             </View>
@@ -114,7 +147,7 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
             disabled={isLoading}
           >
             <Text style={styles.submitButtonText}>
-              {isLoading ? '등록 중...' : '등록'}
+              {isLoading ? '처리 중...' : (isEditMode ? '수정하기' : '작성하기')}
             </Text>
           </TouchableOpacity>
         </View>
