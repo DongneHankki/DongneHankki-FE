@@ -13,13 +13,20 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { common } from '../../../shared/styles/commonAuthStyles';
 import { useImagePicker } from '../hooks/useImagePicker';
 import { generateAIMarketingContent, uploadMarketingPost } from '../services/storeApi';
 import { MarketingPost } from '../types/storeTypes';
 
+const Tab = createBottomTabNavigator();
+
+type NavigationProp = {
+  navigate: (screen: string, params?: any) => void;
+};
+
 const StoreManagementScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const [basicContent, setBasicContent] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,8 +70,8 @@ const StoreManagementScreen: React.FC = () => {
       
       await uploadMarketingPost(postData);
       
-      // 성공 후 다음 페이지로 이동
-      navigation.navigate('StorePosting' as never);
+      // 성공 후 StorePostingScreen으로 이동하면서 이미지와 내용 전달
+      navigation.navigate('StorePosting', { image: selectedImage, content: basicContent.trim() });
     } catch (error: any) {
       Alert.alert('오류', error.message);
     } finally {

@@ -14,16 +14,21 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 
-const StorePostingScreen: React.FC = () => {
+interface StorePostingScreenProps {
+  postingParams?: {
+    image: string;
+    content: string;
+  };
+}
+
+const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }) => {
   const navigation = useNavigation();
   const [isEditing, setIsEditing] = useState(false);
-  const [marketingContent, setMarketingContent] = useState(
-    "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다."
-  );
+  const [marketingContent, setMarketingContent] = useState(postingParams?.content || "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
   const [isUploading, setIsUploading] = useState(false);
 
-  // 모의 이미지 데이터 (실제로는 props나 API에서 받아올 예정)
-  const mockImage = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop';
+  // postingParams에서 이미지와 내용을 받아옴
+  const imageUri = postingParams?.image || 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop';
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -50,7 +55,8 @@ const StorePostingScreen: React.FC = () => {
       // 실제 API 호출을 여기에 구현
       await new Promise(resolve => setTimeout(resolve, 2000)); // 모의 지연
       Alert.alert('성공', 'AI 마케팅이 업로드되었습니다!');
-              navigation.navigate('Main' as never);
+      // 업로드 성공 후 StoreManagementScreen으로 돌아가기
+      navigation.goBack();
     } catch (error: any) {
       Alert.alert('오류', error.message || '업로드에 실패했습니다.');
     } finally {
@@ -60,6 +66,8 @@ const StorePostingScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 뒤로 가기 버튼 */}
+      
       {/* 로딩 오버레이 */}
       {(isUploading) && (
         <View style={styles.loadingOverlay}>
@@ -71,13 +79,13 @@ const StorePostingScreen: React.FC = () => {
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>오늘의 마케팅</Text>
           <View style={styles.promptContainer}>
-            <Icon name="sparkles" size={16} color="#FF6B35" />
+            <Icon name="sparkles" size={16} color="#FBA542" />
             <Text style={styles.promptText}>AI가 게시물을 생성했어요</Text>
           </View>
         </View>
         <View style={styles.marketingCard}> 
           <View style={styles.imageContainer}>
-            <Image source={{ uri: mockImage }} style={styles.marketingImage} />
+            <Image source={{ uri: imageUri }} style={styles.marketingImage} />
           </View>
 
           {/* 마케팅 내용 */}
@@ -162,14 +170,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   imageContainer: {
     marginBottom: 16,
@@ -209,8 +211,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 18,
     alignItems: 'center',
   },
   editButtonText: {
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -245,17 +247,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   uploadButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: '#FF6B35',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
     elevation: 6,
   },
   uploadButtonDisabled: {
@@ -264,7 +259,7 @@ const styles = StyleSheet.create({
   },
   uploadButtonText: {
     fontSize: 18,
-    color: '#fff',
+    color: '#2e1404',
     fontWeight: '600',
   },
   uploadButtonTextDisabled: {
@@ -280,6 +275,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingTop: 10,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40, // Adjust as needed for spacing
   },
 });
 
