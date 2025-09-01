@@ -27,6 +27,7 @@ export type AuthStackParamList = {
     addressDetail?: string;
     storeName?: string;
     birth: string;
+    storeId?: number;
   };
   RegisterComplete: undefined;
 };

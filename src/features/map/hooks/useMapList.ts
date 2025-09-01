@@ -24,6 +24,7 @@ interface Owner {
   phoneNumber: string;
   role: string;
   storeId: number;
+  birth: string;
 }
 
 interface Store {
@@ -114,7 +115,7 @@ export const useMapList = (
         
         // StoreInfo에 맞게 데이터 가공
         const processedStores = rawStores.map(store => {
-          console.log('개별 스토어 데이터 가공:', store);
+          // console.log('개별 스토어 데이터 가공:', store);
           
           return {
             ...store,

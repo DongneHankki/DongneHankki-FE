@@ -35,3 +35,29 @@ export const getMapData = async (latitude: number, longitude: number, zoomLevel:
   }
 };
 
+export const getStoreDetail = async (storeId: number) => {
+  try {
+    console.log('Store 상세 정보 API 호출 시작');
+    console.log('storeId:', storeId, '타입:', typeof storeId);
+    console.log('API URL:', `/api/stores/${storeId}`);
+    
+    const response = await api.get(`/api/stores/${storeId}`);
+    
+    console.log('Store 상세 정보 API 응답 성공:', response.status);
+    console.log('Store 상세 정보 응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('Store 상세 정보 API 에러 발생');
+    console.error('storeId:', storeId, '타입:', typeof storeId);
+    console.error('에러 메시지:', error.message);
+    console.error('에러 상태 코드:', error.response?.status);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    console.error('전체 에러 객체:', error);
+    
+    throw error;
+  }
+};
+
+
+

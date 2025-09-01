@@ -1,32 +1,101 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useMapStore } from '../store/mapStore';
+import { useMarketStore } from '../store/marketStore';
+import { useAuthStore } from '../../../shared/store/authStore';
 import ReviewCard from './ReviewCard';
+import ReviewWriteModal from './ReviewWriteModal';
+import { getStoreDetail } from '../services/StoresAPI';
+
 
 const StoreDetail = React.memo(({ store, onBack }) => {
+  const [isWriteModalVisible, setIsWriteModalVisible] = useState(false);
+  const { storeList } = useMapStore();
+  const { 
+    storeDetail, 
+    loading, 
+    error, 
+    setStoreDetail, 
+    setLoading, 
+    setError 
+  } = useMarketStore();
+  const { isOwner, userId } = useAuthStore();
+
+  // 컴포넌트 마운트 시 API에서 store 상세 정보 가져오기
+  useEffect(() => {
+    console.log('StoreDetail useEffect 실행됨');
+    console.log('전달받은 store 객체:', store);
+    console.log('store.storeId:', store?.storeId);
+    console.log('store.storeId 타입:', typeof store?.storeId);
+    
+    if (!store?.storeId) {
+      console.log('storeId가 없어서 API 호출을 건너뜁니다. store 객체:', store);
+      return;
+    }
+    
+    console.log('API 호출 조건 만족, fetchStoreDetail 함수 실행');
+    
+    const fetchStoreDetail = async () => {
+      console.log('=== Store 상세 정보 API 호출 시작 ===');
+      console.log('호출할 storeId:', store.storeId);
+      setLoading(true);
+      setError(null);
+      
+      try {
+        console.log('getStoreDetail 함수 호출 직전');
+        const response = await getStoreDetail(store.storeId);
+        console.log('getStoreDetail 함수 호출 완료, response:', response);
+        
+        const storeData = response.data || response;
+        console.log('추출된 storeData:', storeData);
+        
+        console.log('storeData.reviews 존재 여부:', !!storeData.reviews);
+        console.log('storeData.reviews 길이:', storeData.reviews?.length);
+        console.log('storeData.reviews 내용:', storeData.reviews);
+        console.log('storeData.avgStar:', storeData.avgStar);
+        console.log('storeData.owner:', storeData.owner);
+        console.log('storeData.menus:', storeData.menus);
+        
+        setStoreDetail(storeData);
+        console.log('marketStore에 storeDetail 저장 완료');
+        
+      } catch (error) {
+        console.error('Store 상세 정보 가져오기 실패:', error);
+        setError(error);
+        // 에러 발생 시 기본 store 정보 사용
+        setStoreDetail(store);
+      } finally {
+        setLoading(false);
+        console.log('=== API 호출 완료 ===');
+      }
+    };
+
+    fetchStoreDetail();
+  }, [store?.storeId, setStoreDetail, setLoading, setError]);
+  
   // 업종 아이콘을 useMemo로 최적화
   const industryIcon = useMemo(() => {
-    if (!store?.industryCode) return 'restaurant';
+    if (!storeDetail?.industryCode) return 'restaurant';
     
-    if ([2301, 2302, 2303, 2305, 2309, 2310, 2601].includes(store.industryCode)) {
+    if ([2301, 2302, 2303, 2305, 2309, 2310, 2601].includes(storeDetail.industryCode)) {
       return 'store';
     }
-    if ([2501, 2502].includes(store.industryCode)) {
+    if ([2501, 2502].includes(storeDetail.industryCode)) {
       return 'local-cafe';
     }
-    if ([2102, 2103, 2104, 2105, 2201].includes(store.industryCode)) {
+    if ([2102, 2103, 2104, 2105, 2201].includes(storeDetail.industryCode)) {
       return 'restaurant';
     }
-    if ([5101, 5102].includes(store.industryCode)) {
+    if ([5101, 5102].includes(storeDetail.industryCode)) {
       return 'shopping-bag';
     }
     return 'restaurant';
-  }, [store?.industryCode]);
+  }, [storeDetail?.industryCode]);
 
   // 별점 렌더링을 useMemo로 최적화
   const stars = useMemo(() => {
-    const rating = store?.likeCount || 4;
+    const rating = storeDetail?.avgStar || 4;
     return Array.from({ length: 5 }, (_, index) => (
       <Icon
         key={index}
@@ -36,36 +105,148 @@ const StoreDetail = React.memo(({ store, onBack }) => {
         style={styles.star}
       />
     ));
-  }, [store?.likeCount]);
+  }, [storeDetail?.avgStar]);
 
   // 뒤로가기 핸들러를 useCallback으로 최적화
   const handleBack = useCallback(() => {
     onBack();
   }, [onBack]);
 
+  // 리뷰 작성 모달 핸들러들
+  const handleOpenWriteModal = useCallback(() => {
+    setIsWriteModalVisible(true);
+  }, []);
+
+  const handleCloseWriteModal = useCallback(() => {
+    setIsWriteModalVisible(false);
+  }, []);
+
+  // 리뷰 삭제 후 매장 상세 정보 새로고침
+  const handleReviewDeleted = useCallback(async () => {
+    if (!store?.storeId) return;
+    
+    try {
+      console.log('리뷰 삭제 후 매장 상세 정보 새로고침 시작');
+      setLoading(true);
+      const response = await getStoreDetail(store.storeId);
+      const storeData = response.data || response;
+      setStoreDetail(storeData);
+      console.log('매장 상세 정보 새로고침 완료');
+    } catch (error) {
+      console.error('매장 상세 정보 새로고침 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [store?.storeId, setStoreDetail, setLoading]);
+
+  // 현재 사용자의 기존 리뷰 찾기
+  const existingReview = useMemo(() => {
+    if (!storeDetail?.reviews || !userId) return null;
+    
+    const userReview = storeDetail.reviews.find(review => 
+      review.userId === parseInt(userId)
+    );
+    
+    console.log('현재 사용자 기존 리뷰:', userReview);
+    return userReview || null;
+  }, [storeDetail?.reviews, userId]);
+
+  // 리뷰 작성/수정 후 매장 상세 정보 새로고침
+  const handleReviewCreated = useCallback(async () => {
+    if (!store?.storeId) return;
+    
+    try {
+      console.log('리뷰 작성/수정 후 매장 상세 정보 새로고침 시작');
+      setLoading(true);
+      const response = await getStoreDetail(store.storeId);
+      const storeData = response.data || response;
+      setStoreDetail(storeData);
+      console.log('매장 상세 정보 새로고침 완료');
+    } catch (error) {
+      console.error('매장 상세 정보 새로고침 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [store?.storeId, setStoreDetail, setLoading]);
+
   // 매장명을 useMemo로 최적화
   const displayStoreName = useMemo(() => {
-    return store?.name || '매장명';
-  }, [store?.name]);
+    return storeDetail?.name || '매장명';
+  }, [storeDetail?.name]);
 
   // 주소를 useMemo로 최적화
   const displayAddress = useMemo(() => {
-    return store?.address || '주소 정보';
-  }, [store?.address]);
+    return storeDetail?.address || '주소 정보';
+  }, [storeDetail?.address]);
 
   // 팔로워 수를 useMemo로 최적화
   const followerCount = useMemo(() => {
-    return store?.likeCount || 100;
-  }, [store?.likeCount]);
+    return storeDetail?.likeCount || 100;
+  }, [storeDetail?.likeCount]);
 
-  // 리뷰 카드들을 useMemo로 최적화
-  const reviewCards = useMemo(() => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <ReviewCard />
-      <ReviewCard />
-      <ReviewCard />
-    </ScrollView>
-  ), []);
+  // 리뷰 섹션을 useMemo로 최적화
+  const reviewSection = useMemo(() => {
+    if (loading) {
+      return (
+        <View style={styles.reviewContainer}>
+          <Text style={styles.loadingText}>리뷰를 불러오는 중...</Text>
+        </View>
+      );
+    }
+    
+    const reviews = storeDetail?.reviews || [];
+    
+    if (!reviews || reviews.length === 0) {
+      return (
+        <View style={styles.reviewContainer}>
+          <Text style={styles.emptyReviewText}>
+            작성된 한줄 리뷰가 없습니다 🥺
+          </Text>
+        </View>
+      );
+    }
+    
+    // 현재 사용자의 리뷰를 가장 앞쪽에 배치
+    console.log('리뷰 정렬 시작');
+    console.log('현재 userId:', userId, '타입:', typeof userId);
+    console.log('리뷰 목록:', reviews);
+    
+    const sortedReviews = [...reviews].sort((a, b) => {
+      // userId 타입을 맞춰서 비교 (string vs number)
+      const currentUserId = userId ? parseInt(userId) : null;
+      const aUserId = a.userId;
+      const bUserId = b.userId;
+      
+      console.log('비교 중:', {
+        currentUserId,
+        aUserId,
+        bUserId,
+        aIsCurrentUser: aUserId === currentUserId,
+        bIsCurrentUser: bUserId === currentUserId
+      });
+      
+      const aIsCurrentUser = aUserId === currentUserId;
+      const bIsCurrentUser = bUserId === currentUserId;
+      
+      if (aIsCurrentUser && !bIsCurrentUser) return -1; // a가 현재 사용자면 앞으로
+      if (!aIsCurrentUser && bIsCurrentUser) return 1;  // b가 현재 사용자면 앞으로
+      return 0; // 둘 다 현재 사용자이거나 둘 다 다른 사용자면 순서 유지
+    });
+    
+    console.log('정렬된 리뷰:', sortedReviews);
+    
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {sortedReviews.map((review, index) => (
+          <ReviewCard 
+            key={review?.reviewId || review?.id || index} 
+            review={review} 
+            onReviewDeleted={handleReviewDeleted}
+          />
+        ))}
+      </ScrollView>
+    );
+  }, [storeDetail?.reviews, loading, userId, handleReviewDeleted]);
 
   // 메뉴 아이템들을 useMemo로 최적화
   const menuItems = useMemo(() => (
@@ -163,9 +344,17 @@ const StoreDetail = React.memo(({ store, onBack }) => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>간단 리뷰</Text>
+          {!isOwner() && (
+            <TouchableOpacity style={styles.writeReviewButton} onPress={handleOpenWriteModal}>
+              <Icon name="edit" size={16} color="#2E1404" />
+              <Text style={styles.writeReviewButtonText}>
+                {existingReview ? '리뷰 수정' : '리뷰 작성'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.contentSpacing}>
-          {reviewCards}
+          {reviewSection}
         </View>
       </View>
 
@@ -207,6 +396,16 @@ const StoreDetail = React.memo(({ store, onBack }) => {
           </View>
         </View>
       </View>
+
+      {/* 리뷰 작성 모달 */}
+      <ReviewWriteModal
+        visible={isWriteModalVisible}
+        onClose={handleCloseWriteModal}
+        storeId={storeDetail?.storeId || store?.storeId || 1}
+        userId={userId ? parseInt(userId) : 1}
+        onReviewCreated={handleReviewCreated}
+        existingReview={existingReview}
+      />
     </ScrollView>
   );
 });
@@ -308,6 +507,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   sectionTitle: {
@@ -401,6 +601,39 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  reviewContainer: {
+    minHeight: 120,
+    justifyContent: 'center',
+  },
+  emptyReviewText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  writeReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBA542',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  writeReviewButtonText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#2E1404',
+    fontWeight: '600',
+  },
+  loadingText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 14,
   },
 });
 

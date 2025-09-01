@@ -57,6 +57,7 @@ export const checkBusinessNumber = async (businessNumber: string): Promise<Store
     });
 
     if (response.data.status === 'success') {
+      console.log('response.data.data:', response.data.data);
       return response.data.data;
     } else {
       throw new Error(response.data.message || '사업자 등록번호 확인에 실패했습니다.');
