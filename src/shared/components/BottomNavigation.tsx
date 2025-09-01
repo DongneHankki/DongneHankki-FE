@@ -15,6 +15,7 @@ import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
 import StorePostingScreen from '../../features/store/screens/StorePostingScreen';
 import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
+import PostDetailScreen from '../../features/sns/owner/screens/PostDetailScreen';
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
@@ -31,6 +32,16 @@ const StoreManagementStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="StoreManagementMain" component={StoreManagementScreen} />
       <Stack.Screen name="StorePosting" component={StorePostingScreen} />
+    </Stack.Navigator>
+  );
+};
+
+// SNS 탭 내부의 스택 네비게이션 (Owner용)
+const OwnerSNSStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="OwnerFeed" component={OwnerFeedScreen} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} />
     </Stack.Navigator>
   );
 };
@@ -57,7 +68,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     } else {
       return [
         { name: 'Map', component: MapScreen, label: '지도' },
-        { name: 'Subscribe', component: OwnerFeedScreen, label: 'SNS' },
+        { name: 'Subscribe', component: OwnerSNSStack, label: 'SNS' },
         { name: 'Management', component: StoreManagementStack, label: '점포관리' },
         { name: 'Profile', component: ProfileScreen, label: '내 정보' },
 

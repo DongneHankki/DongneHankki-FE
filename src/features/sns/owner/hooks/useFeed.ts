@@ -7,9 +7,9 @@ import {
   getPosts,
   getReviews,
   getProfile,
-  getRecommendation,
-  hideRecommendation,
-  getStorePosts
+  getStorePosts,
+  getStoreOwnerPosts,
+  getStoreCustomerPosts
 } from '../services/feedApi';
 
 export const useFeed = () => {
@@ -61,7 +61,6 @@ export const useFeed = () => {
     });
   }, [userId, role, isAuthenticated, accessToken]);
 
-  // 데이터 로드 - map과 동일한 간단한 방식
   useEffect(() => {
     if (userId && isAuthenticated && accessToken) {
       console.log('useFeed - ✅ 모든 조건 만족: 데이터 로드 시작, userId:', userId);
@@ -85,31 +84,65 @@ export const useFeed = () => {
       console.log('useFeed - 변환된 userId:', numericUserId);
 
       console.log('useFeed - API 호출 시작');
-      const [postsData, reviewsData, profileData, recommendationData] = await Promise.all([
+      const [postsData, reviewsData, profileData] = await Promise.all([
         getPosts(),
         getReviews(numericUserId),
-        getProfile(numericUserId),
-        getRecommendation()
+        getProfile(numericUserId)
       ]);
 
       console.log('=== API 호출 완료 ===');
       console.log('useFeed - posts:', postsData);
       console.log('useFeed - reviews:', reviewsData);
       console.log('useFeed - profile:', profileData);
-      console.log('useFeed - recommendation:', recommendationData);
 
       setPosts(postsData);
       setReviews(reviewsData);
       setProfile(profileData);
-      setRecommendation(recommendationData);
 
       // storeId가 있으면 가게별 게시글도 로드
       if (profileData && profileData.storeId) {
         setStoreId(profileData.storeId);
-        const storePostsData = await getStorePosts(profileData.storeId);
-        setStorePosts(storePostsData);
-        console.log('useFeed - storePosts:', storePostsData);
+        
+        // 사장님 게시글과 손님 게시글 모두 로드
+        const [ownerPostsData, customerPostsData] = await Promise.all([
+          getStoreOwnerPosts(profileData.storeId),
+          getStoreCustomerPosts(profileData.storeId)
+        ]);
+        
+        // 사장님 게시글을 storePosts에 설정 (글 탭에 표시)
+        setStorePosts(ownerPostsData.values as StorePost[]);
+        
+        // 손님 게시글을 reviews에 변환하여 설정 (리뷰 탭에 표시)
+        const customerPostsAsReviews = customerPostsData.values.map((post, index) => ({
+          id: post.postId,
+          rating: 5, // 기본값
+          content: post.content,
+          userName: post.userNickname,
+          createdAt: post.createdAt,
+          images: post.images, // 이미지 정보 추가
+          hashtags: post.hashtags, // 해시태그 정보 추가
+        }));
+        setReviews(customerPostsAsReviews);
+        
+        // 프로필의 리뷰 수를 손님 게시글 수로 업데이트
+        const updatedProfile = {
+          ...profileData,
+          reviewCount: customerPostsData.values.length
+        };
+        setProfile(updatedProfile);
+        
+        console.log('useFeed - ownerPosts:', ownerPostsData);
+        console.log('useFeed - customerPosts:', customerPostsData);
+        console.log('useFeed - updatedProfile:', updatedProfile);
       }
+
+      // 임시 추천 데이터
+      setRecommendation({
+        id: 1,
+        title: '오늘의 추천',
+        content: '오늘은 특별한 메뉴를 소개해보세요!',
+        show: true,
+      });
 
       console.log('useFeed - 상태 업데이트 완료');
     } catch (err: any) {
@@ -135,7 +168,6 @@ export const useFeed = () => {
 
   const handleHideRecommendation = async () => {
     try {
-      await hideRecommendation();
       setRecommendation(prev => prev ? { ...prev, show: false } : null);
     } catch (error) {
       Alert.alert('오류', '추천을 숨기는데 실패했습니다.');

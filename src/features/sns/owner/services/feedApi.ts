@@ -1,5 +1,5 @@
 import api from '../../../../shared/services/api';
-import { Post, Review, Profile, Recommendation, User, UserResponse, Store, StoreResponse, StorePost, StorePostsResponse } from '../types/feedTypes';
+import { Post, Review, Profile, Recommendation, User, UserResponse, Store, StoreResponse, StorePost, StorePostsResponse, StoreOwnerPostsResponse, StoreCustomerPostsResponse, Comment } from '../types/feedTypes';
 
 // User 정보 가져오기 API - map과 동일한 방식
 export const getUserInfo = async (userId: number) => {
@@ -177,36 +177,126 @@ export const getStorePosts = async (storeId: number): Promise<StorePost[]> => {
   }
 };
 
-// Recommendation 가져오기
-export const getRecommendation = async (): Promise<Recommendation | null> => {
+// 가게별 사장님 게시글 조회 API
+export const getStoreOwnerPosts = async (
+  storeId: number,
+  cursorPostId?: number | null,
+  size: number = 10
+): Promise<{
+  values: Post[];
+  nextCursor: number | null;
+}> => {
   try {
-    console.log('getRecommendation 시작');
+    console.log('getStoreOwnerPosts 시작 - storeId:', storeId, 'cursorPostId:', cursorPostId, 'size:', size);
     
-    // TODO: 실제 추천 API가 준비되면 구현
-    // const response = await api.get('/api/recommendations');
-    // return response.data;
+    // 쿼리 파라미터 구성
+    const params: any = { size };
+    if (cursorPostId !== null && cursorPostId !== undefined) {
+      params.cursorPostId = cursorPostId;
+    }
     
-    console.log('추천이 없음');
-    return null;
+    const response = await api.get(`/api/posts/store/${storeId}/owners`, { params });
+    
+    console.log('가게별 사장님 게시글 조회 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status === 'success') {
+      return {
+        values: response.data.data.values || [],
+        nextCursor: response.data.data.nextCursor || null
+      };
+    } else {
+      throw new Error(response.data.message || '게시글 조회에 실패했습니다.');
+    }
     
   } catch (error: any) {
-    console.error('getRecommendation 에러:', error);
-    return null;
-  }
-};
-
-// Recommendation 숨기기
-export const hideRecommendation = async (): Promise<void> => {
-  try {
-    console.log('hideRecommendation 시작');
-    
-    // TODO: 실제 추천 숨기기 API가 준비되면 구현
-    // await api.post('/api/recommendations/hide');
-    
-    console.log('추천 숨기기 완료');
-  } catch (error: any) {
-    console.error('hideRecommendation 에러:', error);
+    console.error('getStoreOwnerPosts 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
     throw error;
   }
 };
- 
+
+// 가게별 일반 유저 게시글 조회 API
+export const getStoreCustomerPosts = async (
+  storeId: number,
+  cursorPostId?: number | null,
+  size: number = 10
+): Promise<{
+  values: Post[];
+  nextCursor: number | null;
+}> => {
+  try {
+    console.log('getStoreCustomerPosts 시작 - storeId:', storeId, 'cursorPostId:', cursorPostId, 'size:', size);
+    
+    // 쿼리 파라미터 구성
+    const params: any = { size };
+    if (cursorPostId !== null && cursorPostId !== undefined) {
+      params.cursorPostId = cursorPostId;
+    }
+    
+    const response = await api.get(`/api/posts/store/${storeId}/customers`, { params });
+    
+    console.log('가게별 일반 유저 게시글 조회 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status === 'success') {
+      return {
+        values: response.data.data.values || [],
+        nextCursor: response.data.data.nextCursor || null
+      };
+    } else {
+      throw new Error(response.data.message || '게시글 조회에 실패했습니다.');
+    }
+    
+  } catch (error: any) {
+    console.error('getStoreCustomerPosts 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 게시글 단건 조회 API
+export const getPostDetail = async (postId: number): Promise<Post> => {
+  try {
+    console.log('getPostDetail 시작 - postId:', postId);
+    
+    const response = await api.get(`/api/posts/${postId}`);
+    
+    console.log('게시글 단건 조회 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status === 'success') {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || '게시글 조회에 실패했습니다.');
+    }
+    
+  } catch (error: any) {
+    console.error('getPostDetail 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 댓글 조회 API
+export const getPostComments = async (postId: number): Promise<Comment[]> => {
+  try {
+    console.log('getPostComments 시작 - postId:', postId);
+    
+    const response = await api.get(`/api/posts/${postId}/comments`);
+    
+    console.log('댓글 조회 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status === 'success') {
+      return response.data.data || [];
+    } else {
+      throw new Error(response.data.message || '댓글 조회에 실패했습니다.');
+    }
+    
+  } catch (error: any) {
+    console.error('getPostComments 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};

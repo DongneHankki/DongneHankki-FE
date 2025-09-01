@@ -1,18 +1,29 @@
 export interface Post {
-  id: number;
+  postId: number;
   content: string;
-  time?: string;
-  createdAt?: string;
-  comments: number;
-  likes: number;
-  image: string | null;
+  storeId: number;
+  storeName: string;
+  userId: number;
+  userNickname: string;
+  uploderRole: 'OWNER' | 'CUSTOMER';
+  images: PostImage[];
+  hashtags: string[];
+  likeCount: number;
+  createdAt: string;
 }
 
-// 새로운 API 응답 타입들
 export interface PostImage {
   imageUrl: string;
   imageId: number;
   displayOrder: number;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  nickname: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StorePost {
@@ -40,6 +51,7 @@ export interface StorePostsResponse {
 }
 
 export interface Review {
+  [x: string]: any;
   id: number;
   rating: number;
   content: string;
@@ -47,6 +59,8 @@ export interface Review {
   userName?: string;
   time?: string;
   createdAt?: string;
+  images?: PostImage[];
+  hashtags?: string[];
 }
 
 export interface User {
@@ -121,4 +135,26 @@ export interface Recommendation {
   content?: string;
   image?: string;
   show: boolean;
+}
+
+// 가게별 사장님 게시글 조회 API 응답 타입
+export interface StoreOwnerPostsResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: {
+    values: Post[];
+    nextCursor: number | null;
+  };
+}
+
+// 가게별 일반 유저 게시글 조회 API 응답 타입
+export interface StoreCustomerPostsResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: {
+    values: Post[];
+    nextCursor: number | null;
+  };
 }

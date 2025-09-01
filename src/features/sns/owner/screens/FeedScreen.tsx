@@ -12,12 +12,16 @@ import {
   Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import { useFeed } from '../hooks/useFeed';
 
 const { width } = Dimensions.get('window');
 const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
+const reviewImageWidth = imageSize;
+const reviewImageHeight = (imageSize * 3) / 2; // 2:3 비율
 
 const FeedScreen = () => {
+  const navigation = useNavigation();
   const {
     selectedTab,
     posts,
@@ -36,16 +40,12 @@ const FeedScreen = () => {
 
   const handlePostPress = (post: any) => {
     // 게시글 상세 화면으로 이동
-    Alert.alert('게시글 상세', `${post.content}`, [
-      { text: '확인' }
-    ]);
+    (navigation as any).navigate('PostDetail', { post, type: 'post' });
   };
 
   const handleReviewPress = (review: any) => {
     // 리뷰 상세 화면으로 이동
-    Alert.alert('리뷰 상세', `${review.content}`, [
-      { text: '확인' }
-    ]);
+    (navigation as any).navigate('PostDetail', { review, type: 'review' });
   };
 
   if (loading) {
@@ -152,27 +152,51 @@ const FeedScreen = () => {
         {selectedTab === 'posts' && (
           <View style={styles.postsContainer}>
             {storePosts && storePosts.length > 0 ? (
-              <View style={styles.imageGrid}>
+              <View style={styles.postsList}>
                 {storePosts.map((post, index) => (
                   <TouchableOpacity 
                     key={post.postId || index} 
-                    style={styles.imageContainer}
+                    style={styles.postCard}
                     onPress={() => handlePostPress(post)}
                   >
+                    {/* 게시글 이미지 */}
                     <Image 
                       source={
                         post.images && post.images.length > 0 
                           ? { uri: post.images[0].imageUrl }
                           : require('../../../../shared/images/food.png')
                       } 
-                      style={styles.gridImage}
+                      style={styles.postImage}
                       resizeMode="cover"
                     />
-                    {/* 게시글 내용 미리보기 */}
-                    <View style={styles.imageOverlay}>
-                      <Text style={styles.imageText} numberOfLines={2}>
+                    
+                    {/* 게시글 내용 */}
+                    <View style={styles.postContent}>
+                      <Text style={styles.postText} numberOfLines={3}>
                         {post.content}
                       </Text>
+                      
+                      {/* 게시글 정보 */}
+                      <View style={styles.postInfo}>
+                        <Text style={styles.postTime}>
+                          {new Date(post.createdAt).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          })}
+                        </Text>
+                        
+                        <View style={styles.postActions}>
+                          <View style={styles.actionItem}>
+                            <Icon name="comment-outline" size={16} color="#666" />
+                            <Text style={styles.actionText}>10</Text>
+                          </View>
+                          <View style={styles.actionItem}>
+                            <Icon name="thumb-up-outline" size={16} color="#666" />
+                            <Text style={styles.actionText}>{post.likeCount}</Text>
+                          </View>
+                        </View>
+                      </View>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -195,30 +219,18 @@ const FeedScreen = () => {
                 {reviews.map((review, index) => (
                   <TouchableOpacity 
                     key={review.id || index} 
-                    style={styles.imageContainer}
+                    style={styles.reviewImageContainer}
                     onPress={() => handleReviewPress(review)}
                   >
                     <Image 
-                      source={require('../../../../shared/images/food.png')} 
+                      source={
+                        review.images && review.images.length > 0 
+                          ? { uri: review.images[0].imageUrl }
+                          : require('../../../../shared/images/food.png')
+                      }
                       style={styles.gridImage}
                       resizeMode="cover"
                     />
-                    {/* 리뷰 정보 오버레이 */}
-                    <View style={styles.imageOverlay}>
-                      <View style={styles.reviewInfo}>
-                        <View style={styles.reviewRating}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Icon 
-                              key={star} 
-                              name="star" 
-                              size={12} 
-                              color={star <= review.rating ? "#FFD700" : "#ccc"} 
-                            />
-                          ))}
-                        </View>
-                        <Text style={styles.reviewUserName}>{review.userName}</Text>
-                      </View>
-                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -281,8 +293,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingVertical: 15,
     backgroundColor: '#fff',
   },
   editButton: {
@@ -387,6 +398,59 @@ const styles = StyleSheet.create({
   postsContainer: {
     paddingHorizontal: 20,
   },
+  postsList: {
+    // 리스트 레이아웃
+  },
+  postCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  postImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  postContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  postText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  postInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  postTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  postActions: {
+    flexDirection: 'row',
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 15,
+  },
+  actionText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
   reviewsContainer: {
     paddingHorizontal: 20,
   },
@@ -399,6 +463,14 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: imageSize,
     height: imageSize,
+    marginBottom: 10,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  reviewImageContainer: {
+    width: reviewImageWidth,
+    height: reviewImageHeight,
     marginBottom: 10,
     borderRadius: 8,
     overflow: 'hidden',
