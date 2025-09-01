@@ -14,3 +14,31 @@ export interface UploadResponse {
   data?: any;
   message?: string;
 }
+
+// AI 마케팅 게시글 생성 API 타입
+export interface AIGenerationRequest {
+  image: string;
+  text: string;
+}
+
+export interface AIGenerationResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: string;
+}
+
+// 사장님 게시글 작성 API 타입
+export interface OwnerPostRequest {
+  storeId: number;
+  content: string;
+  images: string[];
+  hashtags: string[];
+}
+
+export interface OwnerPostResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: any;
+}

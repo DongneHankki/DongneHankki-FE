@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { createOwnerPost } from '../services/storeApi';
+import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 interface StorePostingScreenProps {
   postingParams?: {
@@ -27,8 +29,8 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
   const [marketingContent, setMarketingContent] = useState(postingParams?.content || "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
   const [isUploading, setIsUploading] = useState(false);
 
-  // postingParams에서 이미지와 내용을 받아옴
-  const imageUri = postingParams?.image || 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop';
+  // route params에서 이미지와 내용을 받아옴
+  const imageUri = postingParams?.image || require('../../../shared/images/food.png');
 
   const handleEdit = () => {
     setIsEditing(true);

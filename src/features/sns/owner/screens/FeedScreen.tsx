@@ -8,15 +8,20 @@ import {
   Image, 
   Alert,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFeed } from '../hooks/useFeed';
+
+const { width } = Dimensions.get('window');
+const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
 
 const FeedScreen = () => {
   const {
     selectedTab,
     posts,
+    storePosts,
     reviews,
     profile,
     recommendation,
@@ -28,6 +33,20 @@ const FeedScreen = () => {
     handleHideRecommendation,
     handleRefresh,
   } = useFeed();
+
+  const handlePostPress = (post: any) => {
+    // 게시글 상세 화면으로 이동
+    Alert.alert('게시글 상세', `${post.content}`, [
+      { text: '확인' }
+    ]);
+  };
+
+  const handleReviewPress = (review: any) => {
+    // 리뷰 상세 화면으로 이동
+    Alert.alert('리뷰 상세', `${review.content}`, [
+      { text: '확인' }
+    ]);
+  };
 
   if (loading) {
     return (
@@ -75,7 +94,7 @@ const FeedScreen = () => {
         {/* 프로필 카드 */}
         <View style={styles.profileCard}>
           <Image 
-            source={{ uri: profile.profileImage }} 
+            source={profile.image || require('../../../../shared/images/profile.png')} 
             style={styles.profileImage}
           />
           <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
@@ -85,11 +104,17 @@ const FeedScreen = () => {
           {/* 별점 */}
           <View style={styles.ratingContainer}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <Icon key={star} name="star" size={20} color="#FFD700" />
+              <Icon 
+                key={star} 
+                name="star" 
+                size={20} 
+                color={star <= Math.floor(profile.rating) ? "#FFD700" : "#ccc"} 
+              />
             ))}
+            <Text style={styles.ratingText}>{profile.rating}</Text>
           </View>
           
-          <Text style={styles.followers}>팔로워 {profile.followers}</Text>
+          <Text style={styles.reviewCount}>리뷰 {profile.reviewCount}개</Text>
         </View>
 
         {/* 탭 네비게이션 */}
@@ -111,74 +136,99 @@ const FeedScreen = () => {
         {/* 오늘의 게시물 추천 */}
         {selectedTab === 'posts' && recommendation?.show && (
           <View style={styles.recommendationBox}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={handleHideRecommendation}
-            >
+            <TouchableOpacity onPress={handleHideRecommendation} style={styles.closeButton}>
               <Icon name="close" size={20} color="#666" />
             </TouchableOpacity>
-            <Text style={styles.recommendationTitle}>{recommendation.title}</Text>
-            <Text style={styles.recommendationText}>{recommendation.text}</Text>
-            <TouchableOpacity style={styles.writeButton} onPress={handleWritePost}>
-              <Text style={styles.writeButtonText}>글쓰러 가기</Text>
+            <Text style={styles.recommendationTitle}>오늘의 게시물 추천</Text>
+            <Text style={styles.recommendationText}>{recommendation.content}</Text>
+            <TouchableOpacity onPress={handleWritePost} style={styles.writeButton}>
+              <Text style={styles.writeButtonText}>게시글 작성하기</Text>
               <Icon name="arrow-right" size={16} color="#2E1404" />
             </TouchableOpacity>
           </View>
         )}
 
-        {/* 게시물 목록 */}
+        {/* 게시글 그리드 */}
         {selectedTab === 'posts' && (
           <View style={styles.postsContainer}>
-            {posts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
-                <View style={styles.postImageContainer}>
-                  {post.image ? (
-                    <Image source={{ uri: post.image }} style={styles.postImage} />
-                  ) : (
-                    <Icon name="image" size={40} color="#ccc" />
-                  )}
-                </View>
-                <View style={styles.postContent}>
-                  <Text style={styles.postText}>{post.content}</Text>
-                  <Text style={styles.postTime}>{post.time}</Text>
-                  <View style={styles.postStats}>
-                    <View style={styles.statItem}>
-                      <Icon name="comment-outline" size={16} color="#666" />
-                      <Text style={styles.statText}>{post.comments}</Text>
+            {storePosts && storePosts.length > 0 ? (
+              <View style={styles.imageGrid}>
+                {storePosts.map((post, index) => (
+                  <TouchableOpacity 
+                    key={post.postId || index} 
+                    style={styles.imageContainer}
+                    onPress={() => handlePostPress(post)}
+                  >
+                    <Image 
+                      source={
+                        post.images && post.images.length > 0 
+                          ? { uri: post.images[0].imageUrl }
+                          : require('../../../../shared/images/food.png')
+                      } 
+                      style={styles.gridImage}
+                      resizeMode="cover"
+                    />
+                    {/* 게시글 내용 미리보기 */}
+                    <View style={styles.imageOverlay}>
+                      <Text style={styles.imageText} numberOfLines={2}>
+                        {post.content}
+                      </Text>
                     </View>
-                    <View style={styles.statItem}>
-                      <Icon name="thumb-up-outline" size={16} color="#666" />
-                      <Text style={styles.statText}>{post.likes}</Text>
-                    </View>
-                  </View>
-                </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            ))}
+            ) : (
+              <View style={styles.emptyPostsContainer}>
+                <Icon name="post-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyPostsText}>아직 게시글이 없습니다.</Text>
+                <Text style={styles.emptyPostsSubText}>첫 번째 게시글을 작성해보세요!</Text>
+              </View>
+            )}
           </View>
         )}
 
-        {/* 리뷰 목록 */}
+        {/* 리뷰 사진 그리드 */}
         {selectedTab === 'reviews' && (
           <View style={styles.reviewsContainer}>
-            {reviews.map((review) => (
-              <View key={review.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewRating}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Icon 
-                        key={star} 
-                        name="star" 
-                        size={16} 
-                        color={star <= review.rating ? "#FFD700" : "#ccc"} 
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.reviewTime}>{review.time}</Text>
-                </View>
-                <Text style={styles.reviewContent}>{review.content}</Text>
-                <Text style={styles.reviewAuthor}>- {review.author}</Text>
+            {reviews && reviews.length > 0 ? (
+              <View style={styles.imageGrid}>
+                {reviews.map((review, index) => (
+                  <TouchableOpacity 
+                    key={review.id || index} 
+                    style={styles.imageContainer}
+                    onPress={() => handleReviewPress(review)}
+                  >
+                    <Image 
+                      source={require('../../../../shared/images/food.png')} 
+                      style={styles.gridImage}
+                      resizeMode="cover"
+                    />
+                    {/* 리뷰 정보 오버레이 */}
+                    <View style={styles.imageOverlay}>
+                      <View style={styles.reviewInfo}>
+                        <View style={styles.reviewRating}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Icon 
+                              key={star} 
+                              name="star" 
+                              size={12} 
+                              color={star <= review.rating ? "#FFD700" : "#ccc"} 
+                            />
+                          ))}
+                        </View>
+                        <Text style={styles.reviewUserName}>{review.userName}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            ))}
+            ) : (
+              <View style={styles.emptyReviewsContainer}>
+                <Icon name="star-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyReviewsText}>아직 리뷰가 없습니다.</Text>
+                <Text style={styles.emptyReviewsSubText}>첫 번째 리뷰를 기다려보세요!</Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -263,9 +313,16 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 10,
   },
-  followers: {
+  ratingText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E1404',
+  },
+  reviewCount: {
     fontSize: 14,
     color: '#666',
   },
@@ -330,97 +387,92 @@ const styles = StyleSheet.create({
   postsContainer: {
     paddingHorizontal: 20,
   },
-  postCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  postImageContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  postImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  postContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  postText: {
-    fontSize: 14,
-    color: '#2E1404',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  postTime: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 8,
-  },
-  postStats: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  statText: {
-    fontSize: 12,
-    color: '#666',
-  },
   reviewsContainer: {
     paddingHorizontal: 20,
   },
-  reviewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  reviewHeader: {
+  imageGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  imageContainer: {
+    width: imageSize,
+    height: imageSize,
     marginBottom: 10,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 8,
+  },
+  imageText: {
+    color: '#fff',
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  reviewInfo: {
+    alignItems: 'center',
   },
   reviewRating: {
     flexDirection: 'row',
+    marginBottom: 2,
   },
-  reviewTime: {
-    fontSize: 12,
-    color: '#999',
+  reviewUserName: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  reviewContent: {
-    fontSize: 14,
-    color: '#2E1404',
-    lineHeight: 20,
-    marginBottom: 8,
+  emptyPostsContainer: {
+    alignItems: 'center',
+    paddingVertical: 50,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  reviewAuthor: {
-    fontSize: 12,
+  emptyPostsText: {
+    fontSize: 18,
     color: '#666',
-    textAlign: 'right',
+    marginTop: 15,
+    fontWeight: 'bold',
+  },
+  emptyPostsSubText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 5,
+  },
+  emptyReviewsContainer: {
+    alignItems: 'center',
+    paddingVertical: 50,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  emptyReviewsText: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 15,
+    fontWeight: 'bold',
+  },
+  emptyReviewsSubText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 5,
   },
 });
 

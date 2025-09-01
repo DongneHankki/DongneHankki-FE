@@ -1,28 +1,81 @@
 import api from '../../../shared/services/api';
-import { MarketingPost, AIResponse, UploadResponse } from '../types/storeTypes';
+import { 
+  MarketingPost, 
+  AIResponse, 
+  UploadResponse, 
+  AIGenerationRequest, 
+  AIGenerationResponse,
+  OwnerPostRequest,
+  OwnerPostResponse
+} from '../types/storeTypes';
 
 // AI 마케팅 글 생성 API
-export const generateAIMarketingContent = async (image: string): Promise<string> => {
+export const generateAIMarketingContent = async (image: string, keywords: string = ''): Promise<string> => {
   try {
-    // 실제 API가 구현되기 전까지는 모의 응답을 반환
-    // const response = await api.post(`/ai/generate-marketing`, { image });
-    // return response.data.data;
+    console.log('AI 마케팅 글 생성 시작 - image:', image, 'keywords:', keywords);
     
-    // 모의 AI 응답
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 지연
+    // FormData 생성
+    const formData = new FormData();
     
-    const mockResponses = [
-      "오늘도 깨끗하게 정리된 주방에서 맛있는 음식을 만들어드리겠습니다! 손님이 안 보셔도 매일 청소하는 것이 저희의 자존심입니다. 🧹✨",
-      "마감 청소 완료! 내일도 신선한 재료로 정성스럽게 요리하겠습니다. 깨끗한 환경에서 만드는 음식이 더욱 맛있답니다. 🍽️",
-      "하루의 마무리, 주방 정리 끝! 내일도 최고의 서비스로 찾아주시는 고객님들을 기다리겠습니다. 항상 감사합니다! 🙏",
-      "오늘도 열심히 일한 주방을 깨끗하게 정리했습니다. 내일도 같은 마음으로 정성스럽게 요리하겠습니다. 맛있는 하루 되세요! 😊"
-    ];
+    // 이미지 파일 추가 (base64 또는 파일 URI)
+    if (image.startsWith('data:')) {
+      // base64 이미지인 경우
+      const imageFile = {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
+    } else if (image.startsWith('file://')) {
+      // 로컬 파일인 경우
+      const imageFile = {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
+    } else {
+      // URI인 경우
+      const imageFile = {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
+    }
     
-    const randomIndex = Math.floor(Math.random() * mockResponses.length);
-    return mockResponses[randomIndex];
+    // 키워드 추가
+    formData.append('text', keywords);
+    
+    console.log('FormData 생성 완료:', formData);
+    
+    // API 호출
+    const response = await api.post<AIGenerationResponse>('/api/posts/generate/1', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    console.log('AI API 응답 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status !== 'success') {
+      throw new Error(response.data.message || 'AI 마케팅 글 생성에 실패했습니다.');
+    }
+    
+    return response.data.data;
+    
   } catch (error: any) {
     console.error('AI 마케팅 글 생성 실패:', error);
-    throw new Error('AI 마케팅 글 생성에 실패했습니다.');
+    
+    // 에러 응답 데이터 확인
+    if (error.response?.data) {
+      console.error('에러 응답 데이터:', JSON.stringify(error.response.data, null, 2));
+      throw new Error(error.response.data.message || 'AI 마케팅 글 생성에 실패했습니다.');
+    }
+    
+    // 네트워크 에러 등
+    throw new Error('AI 마케팅 글 생성에 실패했습니다. 네트워크를 확인해주세요.');
   }
 };
 
@@ -44,5 +97,85 @@ export const uploadMarketingPost = async (postData: MarketingPost): Promise<Uplo
   } catch (error: any) {
     console.error('마케팅 포스트 업로드 실패:', error);
     throw new Error('마케팅 포스트 업로드에 실패했습니다.');
+  }
+};
+
+// 사장님 게시글 작성 API
+export const createOwnerPost = async (postData: OwnerPostRequest): Promise<OwnerPostResponse> => {
+  try {
+    console.log('사장님 게시글 작성 시작:', postData);
+    
+    // FormData 생성
+    const formData = new FormData();
+    
+    // storeId 추가
+    formData.append('storeId', postData.storeId.toString());
+    
+    // content 추가
+    formData.append('content', postData.content);
+    
+    // images 추가 (여러 이미지 지원)
+    postData.images.forEach((image, index) => {
+      if (image.startsWith('data:')) {
+        // base64 이미지인 경우
+        const imageFile = {
+          uri: image,
+          type: 'image/jpeg',
+          name: `image_${index}.jpg`,
+        } as any;
+        formData.append('images', imageFile);
+      } else if (image.startsWith('file://')) {
+        // 로컬 파일인 경우
+        const imageFile = {
+          uri: image,
+          type: 'image/jpeg',
+          name: `image_${index}.jpg`,
+        } as any;
+        formData.append('images', imageFile);
+      } else {
+        // URI인 경우
+        const imageFile = {
+          uri: image,
+          type: 'image/jpeg',
+          name: `image_${index}.jpg`,
+        } as any;
+        formData.append('images', imageFile);
+      }
+    });
+    
+    // hashtags 추가 (배열 형태로 전송)
+    postData.hashtags.forEach((tag, index) => {
+      formData.append('hashtags', tag);
+    });
+    
+    console.log('FormData 생성 완료:', formData);
+    
+    // API 호출
+    const response = await api.post<OwnerPostResponse>('/api/posts/owners', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    console.log('사장님 게시글 작성 API 응답 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    if (response.data.status !== 'success') {
+      throw new Error(response.data.message || '게시글 작성에 실패했습니다.');
+    }
+    
+    return response.data;
+    
+  } catch (error: any) {
+    console.error('사장님 게시글 작성 실패:', error);
+    
+    // 에러 응답 데이터 확인
+    if (error.response?.data) {
+      console.error('에러 응답 데이터:', JSON.stringify(error.response.data, null, 2));
+      throw new Error(error.response.data.message || '게시글 작성에 실패했습니다.');
+    }
+    
+    // 네트워크 에러 등
+    throw new Error('게시글 작성에 실패했습니다. 네트워크를 확인해주세요.');
   }
 };

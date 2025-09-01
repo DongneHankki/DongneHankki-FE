@@ -19,6 +19,9 @@ import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
 
+// FCM 훅 import
+import { useFCM } from '../hooks/useFCM';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -39,21 +42,24 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
   // 인증 체크 훅 사용
   useAuthCheck();
+  
+  // FCM 토큰 초기화 (로그인 후에만 실행됨)
+  const { token: fcmToken, isLoading: fcmLoading } = useFCM();
 
   const getTabScreens = () => {
     if (userType === 'customer') {
       return [
-        { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: FeedScreen },
-        { name: 'Recommend', component: RecommendScreen },
-        { name: 'Profile', component: ProfileScreen },
+        { name: 'Map', component: MapScreen, label: '지도' },
+        { name: 'Subscribe', component: FeedScreen, label: 'SNS' },
+        { name: 'Recommend', component: RecommendScreen, label: '추천' },
+        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
       ];
     } else {
       return [
-        { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: OwnerFeedScreen },
-        { name: 'Management', component: StoreManagementStack },
-        { name: 'Profile', component: ProfileScreen },
+        { name: 'Map', component: MapScreen, label: '지도' },
+        { name: 'Subscribe', component: OwnerFeedScreen, label: 'SNS' },
+        { name: 'Management', component: StoreManagementStack, label: '점포관리' },
+        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
 
       ];
     }
@@ -93,7 +99,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
       }
     }
-
+    
     return <Icon name="help-outline" size={size} color={color} />;
   };
 

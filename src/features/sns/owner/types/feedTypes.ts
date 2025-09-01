@@ -8,6 +8,37 @@ export interface Post {
   image: string | null;
 }
 
+// 새로운 API 응답 타입들
+export interface PostImage {
+  imageUrl: string;
+  imageId: number;
+  displayOrder: number;
+}
+
+export interface StorePost {
+  postId: number;
+  content: string;
+  storeId: number;
+  storeName: string;
+  userId: number;
+  userNickname: string;
+  uploderRole: 'OWNER';
+  images: PostImage[];
+  hashtags: string[];
+  likeCount: number;
+  createdAt: string;
+}
+
+export interface StorePostsResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: {
+    values: StorePost[];
+    nextCursor: number | null;
+  };
+}
+
 export interface Review {
   id: number;
   rating: number;
@@ -80,6 +111,7 @@ export interface Profile {
   phone?: string;
   profileImage?: string;
   image?: string;
+  storeId?: number;
 }
 
 export interface Recommendation {

@@ -1,59 +1,5 @@
 import api from '../../../../shared/services/api';
-import { Post, Review, Profile, Recommendation, User, UserResponse, Store, StoreResponse } from '../types/feedTypes';
-
-// Mock 데이터
-const mockPosts: Post[] = [
-  {
-    id: 1,
-    content: '오늘은 정말 바빴어요! 손님들이 많이 와서 즐거웠습니다.',
-    image: 'https://via.placeholder.com/300x200',
-    likes: 15,
-    comments: 3,
-    createdAt: '2024-01-15T10:00:00Z',
-  },
-  {
-    id: 2,
-    content: '새로운 메뉴를 준비했어요. 곧 공개할 예정입니다!',
-    image: 'https://via.placeholder.com/300x200',
-    likes: 23,
-    comments: 7,
-    createdAt: '2024-01-14T15:30:00Z',
-  },
-];
-
-const mockReviews: Review[] = [
-  {
-    id: 1,
-    userName: '김철수',
-    rating: 5,
-    content: '정말 맛있어요! 서비스도 친절하고 분위기도 좋았습니다.',
-    createdAt: '2024-01-15T09:00:00Z',
-  },
-  {
-    id: 2,
-    userName: '이영희',
-    rating: 4,
-    content: '음식이 맛있고 가격도 합리적이에요. 다음에 또 올게요!',
-    createdAt: '2024-01-14T18:00:00Z',
-  },
-];
-
-const mockProfile: Profile = {
-  restaurantName: '메가엠지씨커피',
-  address: '서울시 강남구 테헤란로 123',
-  phone: '02-1234-5678',
-  rating: 4.5,
-  reviewCount: 128,
-  image: 'https://via.placeholder.com/150x150',
-};
-
-const mockRecommendation: Recommendation = {
-  id: 1,
-  title: '오늘의 추천 메뉴',
-  content: '새로 나온 아메리카노를 추천합니다! 특별한 원두로 만든 커피입니다.',
-  image: 'https://via.placeholder.com/300x200',
-  show: true
-};
+import { Post, Review, Profile, Recommendation, User, UserResponse, Store, StoreResponse, StorePost, StorePostsResponse } from '../types/feedTypes';
 
 // User 정보 가져오기 API - map과 동일한 방식
 export const getUserInfo = async (userId: number) => {
@@ -124,7 +70,8 @@ export const getProfile = async (userId: number): Promise<Profile> => {
       address: store.address,
       rating: store.avgStar || 0,
       reviewCount: store.reviews?.length || 0,
-      image: 'https://via.placeholder.com/150x150',
+      image: require('../../../../shared/images/profile.png'),
+      storeId: storeId,
     };
     
     console.log('생성된 Profile:', profile);
@@ -138,7 +85,8 @@ export const getProfile = async (userId: number): Promise<Profile> => {
       address: '주소 정보 없음',
       rating: 0,
       reviewCount: 0,
-      image: 'https://via.placeholder.com/150x150',
+      image: require('../../../../shared/images/profile.png'),
+      storeId: 1,
     };
   }
 };
@@ -193,41 +141,72 @@ export const getReviews = async (userId: number): Promise<Review[]> => {
   }
 };
 
-// 게시물 관련 API
+// Posts 가져오기
 export const getPosts = async (): Promise<Post[]> => {
   try {
-    console.log('getPosts 호출');
-    // 모의 지연
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return mockPosts;
+    console.log('getPosts 시작');
+    
+    // TODO: 실제 게시글 API가 준비되면 구현
+    // const response = await api.get('/api/posts');
+    // return response.data;
+    
+    console.log('게시글이 없음');
+    return [];
+    
   } catch (error: any) {
-    console.error('게시물 조회 실패:', error);
-    throw new Error('게시물을 불러오는데 실패했습니다.');
+    console.error('getPosts 에러:', error);
+    return [];
   }
 };
 
-// 추천 관련 API
-export const getRecommendation = async (): Promise<Recommendation> => {
+// Store Posts 가져오기
+export const getStorePosts = async (storeId: number): Promise<StorePost[]> => {
   try {
-    console.log('getRecommendation 호출');
-    // 모의 지연
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return mockRecommendation;
+    console.log('getStorePosts 시작 - storeId:', storeId);
+    
+    // TODO: 실제 매장별 게시글 API가 준비되면 구현
+    // const response = await api.get(`/api/stores/${storeId}/posts`);
+    // return response.data;
+    
+    console.log('매장 게시글이 없음');
+    return [];
+    
   } catch (error: any) {
-    console.error('추천 조회 실패:', error);
-    throw new Error('추천을 불러오는데 실패했습니다.');
+    console.error('getStorePosts 에러:', error);
+    return [];
   }
 };
 
+// Recommendation 가져오기
+export const getRecommendation = async (): Promise<Recommendation | null> => {
+  try {
+    console.log('getRecommendation 시작');
+    
+    // TODO: 실제 추천 API가 준비되면 구현
+    // const response = await api.get('/api/recommendations');
+    // return response.data;
+    
+    console.log('추천이 없음');
+    return null;
+    
+  } catch (error: any) {
+    console.error('getRecommendation 에러:', error);
+    return null;
+  }
+};
+
+// Recommendation 숨기기
 export const hideRecommendation = async (): Promise<void> => {
   try {
-    console.log('hideRecommendation 호출');
-    // 모의 지연
-    await new Promise(resolve => setTimeout(resolve, 200));
+    console.log('hideRecommendation 시작');
+    
+    // TODO: 실제 추천 숨기기 API가 준비되면 구현
+    // await api.post('/api/recommendations/hide');
+    
     console.log('추천 숨기기 완료');
   } catch (error: any) {
-    console.error('추천 숨기기 실패:', error);
-    throw new Error('추천을 숨기는데 실패했습니다.');
+    console.error('hideRecommendation 에러:', error);
+    throw error;
   }
 };
  

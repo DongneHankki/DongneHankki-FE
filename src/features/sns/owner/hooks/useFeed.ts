@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getTokenFromLocal } from '../../../../shared/utils/tokenUtil';
-import { Post, Review, Profile, Recommendation } from '../types/feedTypes';
+import { Post, Review, Profile, Recommendation, StorePost } from '../types/feedTypes';
 import {
   getPosts,
   getReviews,
   getProfile,
   getRecommendation,
-  hideRecommendation
+  hideRecommendation,
+  getStorePosts
 } from '../services/feedApi';
 
 export const useFeed = () => {
@@ -17,9 +18,11 @@ export const useFeed = () => {
   const [role, setRole] = useState<'owner' | 'customer' | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [storeId, setStoreId] = useState<number | null>(null);
 
   const [selectedTab, setSelectedTab] = useState<'posts' | 'reviews'>('posts');
   const [posts, setPosts] = useState<Post[]>([]);
+  const [storePosts, setStorePosts] = useState<StorePost[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
@@ -100,6 +103,14 @@ export const useFeed = () => {
       setProfile(profileData);
       setRecommendation(recommendationData);
 
+      // storeId가 있으면 가게별 게시글도 로드
+      if (profileData && profileData.storeId) {
+        setStoreId(profileData.storeId);
+        const storePostsData = await getStorePosts(profileData.storeId);
+        setStorePosts(storePostsData);
+        console.log('useFeed - storePosts:', storePostsData);
+      }
+
       console.log('useFeed - 상태 업데이트 완료');
     } catch (err: any) {
       console.error('=== loadData 에러 발생 ===');
@@ -141,6 +152,7 @@ export const useFeed = () => {
   return {
     selectedTab,
     posts,
+    storePosts,
     reviews,
     profile,
     recommendation,
