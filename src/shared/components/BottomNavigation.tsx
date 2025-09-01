@@ -1,23 +1,50 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 
 // Customer 스크린들 import
 import MapScreen from '../../features/map/screens/MapScreen';
 import RecommendScreen from '../../features/recommend/screens/RecommendScreen';
-import CustomerMain from '../../features/sns/customer/screens/CustomerMain';
+import FeedScreen from '../../features/sns/screens/FeedScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 
 // Owner 스크린들 import
-import StoreManagementScreen from '../../features/manage/screens/StoreManagementScreen';
+import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
+import StorePostingScreen from '../../features/store/screens/StorePostingScreen';
+import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
+import PostDetailScreen from '../../features/sns/owner/screens/PostDetailScreen';
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
 
+// FCM 훅 import
+import { useFCM } from '../hooks/useFCM';
+
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// 점포관리 탭 내부의 스택 네비게이션
+const StoreManagementStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StoreManagementMain" component={StoreManagementScreen} />
+      <Stack.Screen name="StorePosting" component={StorePostingScreen} />
+    </Stack.Navigator>
+  );
+};
+
+// SNS 탭 내부의 스택 네비게이션 (Owner용)
+const OwnerSNSStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="OwnerFeed" component={OwnerFeedScreen} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+    </Stack.Navigator>
+  );
+};
 
 interface BottomNavigationProps {
   userType: 'customer' | 'owner';
@@ -26,21 +53,25 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
   // 인증 체크 훅 사용
   useAuthCheck();
+  
+  // FCM 토큰 초기화 (로그인 후에만 실행됨)
+  const { token: fcmToken, isLoading: fcmLoading } = useFCM();
 
   const getTabScreens = () => {
     if (userType === 'customer') {
       return [
-        { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: CustomerMain },
-        { name: 'Recommend', component: RecommendScreen },
-        { name: 'Profile', component: ProfileScreen },
+        { name: 'Map', component: MapScreen, label: '지도' },
+        { name: 'Subscribe', component: FeedScreen, label: 'SNS' },
+        { name: 'Recommend', component: RecommendScreen, label: '추천' },
+        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
       ];
     } else {
       return [
-        { name: 'Map', component: MapScreen },
-        { name: 'Subscribe', component: CustomerMain },
-        { name: 'StoreManagement', component: StoreManagementScreen },
-        { name: 'Profile', component: ProfileScreen },
+        { name: 'Map', component: MapScreen, label: '지도' },
+        { name: 'Subscribe', component: OwnerSNSStack, label: 'SNS' },
+        { name: 'Management', component: StoreManagementStack, label: '점포관리' },
+        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
+
       ];
     }
   };
@@ -60,7 +91,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
 
     // Owner 전용 아이콘
     const OWNER_ICONS: any[] = [
-      { name: 'StoreManagement', label: '점포 관리', icon: 'note', activeIcon: 'note', type: 'SimpleLineIcons' },
+      // Management는 제거됨
     ];
 
     // 모든 아이콘을 합침
@@ -77,11 +108,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
         return <FontAwesome name={iconName} size={size} color={color} />;
       } else if (tabIcon.type === 'MaterialCommunityIcons') {
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-      } else if (tabIcon.type === 'SimpleLineIcons') {
-        return <SimpleLineIcons name={iconName} size={size} color={color} />;
       }
     }
-
+    
     return <Icon name="help-outline" size={size} color={color} />;
   };
 
@@ -117,7 +146,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
             tabBarLabel: screen.name === 'Map' ? '지도' : 
                          screen.name === 'Subscribe' ? 'SNS' : 
                          screen.name === 'Recommend' ? '추천' : 
-                         screen.name === 'StoreManagement' ? '점포 관리' :
+                         screen.name === 'Management' ? '점포관리' :
+                         screen.name === 'Posting' ? '게시' :
                          screen.name === 'Profile' ? '내 정보' : screen.name,
           }}
         />

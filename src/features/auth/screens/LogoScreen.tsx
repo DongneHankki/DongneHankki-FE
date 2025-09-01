@@ -98,12 +98,12 @@ const LogoScreen = ({ navigation }: LogoScreenProps) => {
     const timer = setTimeout(checkAuthStatus, 2000);
     
     return () => clearTimeout(timer);
-  }, [navigation, setAuth, clearAuth]);
+  }, [setAuth, clearAuth, navigation]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../../../shared/images/logo.png')}
+      <Image 
+        source={require('../../../shared/images/logo.png')} 
         style={styles.logo}
         resizeMode="contain"
       />
