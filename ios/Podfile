@@ -1,17 +1,8 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
+# React Native 기본 스크립트 로드
 require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+  'require.resolve("react-native/scripts/react_native_pods.rb",{paths:[process.argv[1]]})', __dir__]).strip
 
 platform :ios, '17.0'
-
-# 동적 프레임워크 (Firebase/네이티브 혼합 이슈 회피)
-use_frameworks! :linkage => :dynamic
-
-# 선택: 전역 모듈러 헤더 (동적에선 필수 아님, 충돌 없음)
-use_modular_headers!
 
 prepare_react_native_project!
 
@@ -23,31 +14,9 @@ target 'DongnaeHankki' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # --- 네이버 지도 iOS SDK (NMG* 심볼 해결) ---
-  pod 'NMapsMap'
-  pod 'NMapsGeometry'
-
-  # --- RN 이미지 모듈 (RCTImageLoader 심볼 해결) ---
-  pod 'React-RCTImage', :path => "#{config[:reactNativePath]}/Libraries/Image"
+  pod 'NMapsMap'      
 
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(installer)
-
-    installer.pods_project.targets.each do |t|
-      t.build_configurations.each do |cfg|
-        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
-        cfg.build_settings['ENABLE_BITCODE'] = 'NO'
-        # Obj-C 카테고리 로딩 문제 방지
-        cfg.build_settings['OTHER_LDFLAGS'] = '$(inherited) -ObjC'
-
-        # 선택: Firebase/GoogleUtilities 안전장치 (동적에선 보통 불필요하지만 무해)
-        if t.name.include?('Firebase') || t.name.include?('GoogleUtilities')
-          cfg.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-          cfg.build_settings['DEFINES_MODULE'] = 'YES'
-          cfg.build_settings['SWIFT_VERSION'] = '5.0'
-        end
-      end
-    end
   end
 end
