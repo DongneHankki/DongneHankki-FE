@@ -28,12 +28,12 @@ type RootStackParamList = {
 type PostDetailScreenRouteProp = RouteProp<RootStackParamList, 'PostDetail'>;
 
 interface PostDetailScreenProps {
-  route: PostDetailScreenRouteProp;
+  route?: PostDetailScreenRouteProp;
 }
 
 const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
   const navigation = useNavigation();
-  const { post: initialPost, review: initialReview, type } = route.params;
+  const { post: initialPost, review: initialReview, type } = route?.params || {};
   
   const [post, setPost] = useState<Post | null>(initialPost || null);
   const [review, setReview] = useState<Review | null>(initialReview || null);
