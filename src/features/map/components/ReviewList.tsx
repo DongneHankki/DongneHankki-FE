@@ -16,7 +16,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isWriteModalVisible, setIsWriteModalVisible] = useState(false);
   const [existingReview, setExistingReview] = useState<Review | null>(null);
-  const { userId: currentUserId } = useAuthStore();
+  const { userId: currentUserId, role } = useAuthStore();
 
   const loadReviews = async () => {
     setIsLoading(true);
@@ -109,6 +109,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ storeId, userId }) => {
         onClose={() => setIsWriteModalVisible(false)}
         storeId={storeId}
         userId={userId}
+        userType={role}
         onReviewCreated={handleReviewCreated}
         existingReview={existingReview}
       />

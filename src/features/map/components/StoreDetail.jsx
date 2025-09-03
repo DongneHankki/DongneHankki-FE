@@ -20,7 +20,7 @@ const StoreDetail = React.memo(({ store, onBack }) => {
     setLoading, 
     setError 
   } = useMarketStore();
-  const { isOwner, userId } = useAuthStore();
+  const { isOwner, userId, role } = useAuthStore();
 
   // 컴포넌트 마운트 시 API에서 store 상세 정보 가져오기
   useEffect(() => {
@@ -93,18 +93,48 @@ const StoreDetail = React.memo(({ store, onBack }) => {
     return 'restaurant';
   }, [storeDetail?.industryCode]);
 
-  // 별점 렌더링을 useMemo로 최적화
+  // 별점 렌더링을 useMemo로 최적화 (부분 채움 지원)
   const stars = useMemo(() => {
     const rating = storeDetail?.avgStar || 4;
-    return Array.from({ length: 5 }, (_, index) => (
-      <Icon
-        key={index}
-        name="star"
-        size={16}
-        color={index < rating ? '#FF9500' : '#E0E0E0'}
-        style={styles.star}
-      />
-    ));
+    return Array.from({ length: 5 }, (_, index) => {
+      const starIndex = index + 1;
+      const fillPercentage = Math.max(0, Math.min(1, rating - index));
+      
+      if (fillPercentage >= 1) {
+        // 완전히 채워진 별
+        return (
+          <Icon
+            key={index}
+            name="star"
+            size={16}
+            color="#FF9500"
+            style={styles.star}
+          />
+        );
+      } else if (fillPercentage > 0) {
+        // 부분적으로 채워진 별 (star-half 사용)
+        return (
+          <Icon
+            key={index}
+            name="star-half"
+            size={16}
+            color="#FF9500"
+            style={styles.star}
+          />
+        );
+      } else {
+        // 빈 별
+        return (
+          <Icon
+            key={index}
+            name="star-border"
+            size={16}
+            color="#E0E0E0"
+            style={styles.star}
+          />
+        );
+      }
+    });
   }, [storeDetail?.avgStar]);
 
   // 뒤로가기 핸들러를 useCallback으로 최적화
@@ -403,6 +433,7 @@ const StoreDetail = React.memo(({ store, onBack }) => {
         onClose={handleCloseWriteModal}
         storeId={storeDetail?.storeId || store?.storeId || 1}
         userId={userId ? parseInt(userId) : 1}
+        userType={role}
         onReviewCreated={handleReviewCreated}
         existingReview={existingReview}
       />
