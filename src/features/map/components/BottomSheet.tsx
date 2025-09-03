@@ -117,6 +117,7 @@ const CustomBottomSheet: React.FC<BottomSheetProps> = ({
           rating={store.rating || store.likeCount || 4}
           onSubscribe={() => {}}
           industryCode={store.industryCode}
+          storeId={store.storeId}
         />
       </TouchableOpacity>
     );

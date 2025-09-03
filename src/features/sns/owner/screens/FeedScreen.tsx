@@ -20,8 +20,21 @@ const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
 const reviewImageWidth = imageSize;
 const reviewImageHeight = (imageSize * 3) / 2; // 2:3 비율
 
-const FeedScreen = () => {
+interface FeedScreenProps {
+  route?: {
+    params?: {
+      storeId?: number;
+      storeName?: string;
+      userType?: 'owner' | 'customer';
+    };
+  };
+}
+
+const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
   const navigation = useNavigation();
+  const routeParams = route?.params || {};
+  const { storeId, storeName, userType } = routeParams;
+  
   const {
     selectedTab,
     posts,
@@ -36,7 +49,7 @@ const FeedScreen = () => {
     handleEditProfile,
     handleHideRecommendation,
     handleRefresh,
-  } = useFeed();
+  } = useFeed(storeId);
 
   const handlePostPress = (post: any) => {
     // 게시글 상세 화면으로 이동
@@ -80,9 +93,21 @@ const FeedScreen = () => {
     <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
-          <Icon name="pencil" size={24} color="#2E1404" />
-        </TouchableOpacity>
+        {userType === 'customer' ? (
+          // Customer가 접근했을 때: 뒤로가기 버튼과 가게 이름
+          <View style={styles.customerHeader}>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('CustomerFeed')} style={styles.backButton}>
+              <Icon name="arrow-left" size={24} color="#2E1404" />
+            </TouchableOpacity>
+            <Text style={styles.customerHeaderTitle}>{storeName || '가게 정보'}</Text>
+            <View style={styles.placeholder} />
+          </View>
+        ) : (
+          // Owner가 접근했을 때: 편집 버튼
+          <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
+            <Icon name="pencil" size={24} color="#2E1404" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView 
@@ -103,15 +128,43 @@ const FeedScreen = () => {
           
           {/* 별점 */}
           <View style={styles.ratingContainer}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Icon 
-                key={star} 
-                name="star" 
-                size={20} 
-                color={star <= Math.floor(profile.rating) ? "#FFD700" : "#ccc"} 
-              />
-            ))}
-            <Text style={styles.ratingText}>{profile.rating}</Text>
+            {[1, 2, 3, 4, 5].map((star) => {
+              const starIndex = star;
+              const fillPercentage = Math.max(0, Math.min(1, profile.rating - (starIndex - 1)));
+              
+              if (fillPercentage >= 1) {
+                // 완전히 채워진 별
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star" 
+                    size={20} 
+                    color="#FFD700" 
+                  />
+                );
+              } else if (fillPercentage > 0) {
+                // 부분적으로 채워진 별 (star-half 사용)
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star-half" 
+                    size={20} 
+                    color="#FFD700" 
+                  />
+                );
+              } else {
+                // 빈 별
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star-border" 
+                    size={20} 
+                    color="#ccc" 
+                  />
+                );
+              }
+            })}
+            <Text style={styles.ratingText}>{profile.rating.toFixed(1)}</Text>
           </View>
           
           <Text style={styles.reviewCount}>리뷰 {profile.reviewCount}개</Text>
@@ -133,8 +186,8 @@ const FeedScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 오늘의 게시물 추천 */}
-        {selectedTab === 'posts' && recommendation?.show && (
+        {/* 오늘의 게시물 추천 - Owner만 표시 */}
+        {userType !== 'customer' && selectedTab === 'posts' && recommendation?.show && (
           <View style={styles.recommendationBox}>
             <TouchableOpacity onPress={handleHideRecommendation} style={styles.closeButton}>
               <Icon name="close" size={20} color="#666" />
@@ -298,6 +351,29 @@ const styles = StyleSheet.create({
   },
   editButton: {
     padding: 8,
+  },
+  customerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    zIndex: 1000,
+  },
+  customerHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E1404',
+    flex: 1,
+    textAlign: 'center',
+  },
+  placeholder: {
+    width: 40,
   },
   profileCard: {
     alignItems: 'center',
