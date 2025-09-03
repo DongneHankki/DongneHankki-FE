@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { createOwnerPost } from '../services/storeApi';
+import { createOwnerPost, createOwnerPostFormData } from '../services/storeApi';
 import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 interface StorePostingScreenProps {
@@ -52,15 +52,40 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
       return;
     }
 
+    if (!postingParams?.image) {
+      Alert.alert('알림', '이미지를 선택해주세요.');
+      return;
+    }
+
     setIsUploading(true);
     try {
-      // 실제 API 호출을 여기에 구현
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 모의 지연
-      Alert.alert('성공', 'AI 마케팅이 업로드되었습니다!');
+      const hashtagRegex = /#[\w가-힣]+/g;
+      const extractedHashtags = marketingContent.match(hashtagRegex) || [];
+      
+      // TODO 해시태그
+      const hashtags = extractedHashtags.length > 0 
+        ? extractedHashtags 
+        : ['#마케팅', '#가게홍보'];
+
+      const postData = {
+        storeId: 1, 
+        content: marketingContent.trim(),
+        images: [postingParams.image],
+        hashtags: hashtags
+      };
+
+      console.log('게시글 작성 데이터:', postData);
+
+      // FormData로 API 호출
+      await createOwnerPostFormData(postData);
+      
+      Alert.alert('성공', '게시글이 성공적으로 작성되었습니다!');
+      
       // 업로드 성공 후 StoreManagementScreen으로 돌아가기
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('오류', error.message || '업로드에 실패했습니다.');
+      console.error('게시글 작성 에러:', error);
+      Alert.alert('오류', error.message || '게시글 작성에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }

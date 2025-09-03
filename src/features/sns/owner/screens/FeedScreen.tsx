@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useFeed } from '../hooks/useFeed';
+import { addPostLike, removePostLike } from '../services/feedApi';
 
 const { width } = Dimensions.get('window');
 const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
@@ -24,19 +25,23 @@ const FeedScreen = () => {
   const navigation = useNavigation();
   const {
     selectedTab,
-    posts,
     storePosts,
     reviews,
     profile,
     recommendation,
+    commentCounts,
     loading,
     error,
     handleTabChange,
     handleWritePost,
-    handleEditProfile,
     handleHideRecommendation,
     handleRefresh,
   } = useFeed();
+
+  // 좋아요 관련 상태
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [postLikeCounts, setPostLikeCounts] = useState<Record<number, number>>({});
+  const [isLiking, setIsLiking] = useState(false);
 
   const handlePostPress = (post: any) => {
     // 게시글 상세 화면으로 이동
@@ -46,6 +51,40 @@ const FeedScreen = () => {
   const handleReviewPress = (review: any) => {
     // 리뷰 상세 화면으로 이동
     (navigation as any).navigate('PostDetail', { review, type: 'review' });
+  };
+
+  // 게시물 좋아요 토글
+  const handlePostLikeToggle = async (postId: number) => {
+    if (isLiking) return;
+    
+    setIsLiking(true);
+    try {
+      const isCurrentlyLiked = likedPosts.has(postId);
+      
+      if (isCurrentlyLiked) {
+        await removePostLike(postId);
+        setLikedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(postId);
+          return newSet;
+        });
+        setPostLikeCounts(prev => ({
+          ...prev,
+          [postId]: Math.max(0, (prev[postId] || 0) - 1)
+        }));
+      } else {
+        await addPostLike(postId);
+        setLikedPosts(prev => new Set(prev).add(postId));
+        setPostLikeCounts(prev => ({
+          ...prev,
+          [postId]: (prev[postId] || 0) + 1
+        }));
+      }
+    } catch (error: any) {
+      Alert.alert('오류', error.message || '좋아요 처리에 실패했습니다.');
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   if (loading) {
@@ -80,9 +119,6 @@ const FeedScreen = () => {
     <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
-          <Icon name="pencil" size={24} color="#2E1404" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -189,12 +225,25 @@ const FeedScreen = () => {
                         <View style={styles.postActions}>
                           <View style={styles.actionItem}>
                             <Icon name="comment-outline" size={16} color="#666" />
-                            <Text style={styles.actionText}>10</Text>
+                            <Text style={styles.actionText}>{commentCounts[post.postId] || 0}</Text>
                           </View>
-                          <View style={styles.actionItem}>
-                            <Icon name="thumb-up-outline" size={16} color="#666" />
-                            <Text style={styles.actionText}>{post.likeCount}</Text>
-                          </View>
+                          <TouchableOpacity 
+                            style={styles.actionItem} 
+                            onPress={() => handlePostLikeToggle(post.postId)}
+                            disabled={isLiking}
+                          >
+                            <Icon 
+                              name={likedPosts.has(post.postId) ? "thumb-up" : "thumb-up-outline"} 
+                              size={16} 
+                              color={likedPosts.has(post.postId) ? "#FF6B35" : "#666"} 
+                            />
+                            <Text style={[
+                              styles.actionText, 
+                              likedPosts.has(post.postId) && styles.likedText
+                            ]}>
+                              {postLikeCounts[post.postId] !== undefined ? postLikeCounts[post.postId] : post.likeCount}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -450,6 +499,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginLeft: 4,
+  },
+  // 좋아요 스타일
+  likedText: {
+    color: '#FF6B35',
+    fontWeight: '600',
   },
   reviewsContainer: {
     paddingHorizontal: 20,

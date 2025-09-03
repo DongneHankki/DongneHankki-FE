@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getTokenFromLocal } from '../../../../shared/utils/tokenUtil';
-import { Post, Review, Profile, Recommendation, StorePost } from '../types/feedTypes';
+import { Review, Profile, Recommendation, StorePost } from '../types/feedTypes';
 import {
-  getPosts,
   getReviews,
   getProfile,
-  getStorePosts,
   getStoreOwnerPosts,
-  getStoreCustomerPosts
+  getStoreCustomerPosts,
+  getPostComments
 } from '../services/feedApi';
 
 export const useFeed = () => {
@@ -21,11 +20,11 @@ export const useFeed = () => {
   const [storeId, setStoreId] = useState<number | null>(null);
 
   const [selectedTab, setSelectedTab] = useState<'posts' | 'reviews'>('posts');
-  const [posts, setPosts] = useState<Post[]>([]);
   const [storePosts, setStorePosts] = useState<StorePost[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,18 +83,15 @@ export const useFeed = () => {
       console.log('useFeed - 변환된 userId:', numericUserId);
 
       console.log('useFeed - API 호출 시작');
-      const [postsData, reviewsData, profileData] = await Promise.all([
-        getPosts(),
+      const [reviewsData, profileData] = await Promise.all([
         getReviews(numericUserId),
         getProfile(numericUserId)
       ]);
 
       console.log('=== API 호출 완료 ===');
-      console.log('useFeed - posts:', postsData);
       console.log('useFeed - reviews:', reviewsData);
       console.log('useFeed - profile:', profileData);
 
-      setPosts(postsData);
       setReviews(reviewsData);
       setProfile(profileData);
 
@@ -115,12 +111,15 @@ export const useFeed = () => {
         // 손님 게시글을 reviews에 변환하여 설정 (리뷰 탭에 표시)
         const customerPostsAsReviews = customerPostsData.values.map((post, index) => ({
           id: post.postId,
+          postId: post.postId, // 댓글 수 조회를 위해 추가
           rating: 5, // 기본값
           content: post.content,
           userName: post.userNickname,
           createdAt: post.createdAt,
           images: post.images, // 이미지 정보 추가
           hashtags: post.hashtags, // 해시태그 정보 추가
+          likeCount: post.likeCount || 0, // 좋아요 수 추가
+          userId: post.userId, // 사용자 ID 추가
         }));
         setReviews(customerPostsAsReviews);
         
@@ -134,6 +133,10 @@ export const useFeed = () => {
         console.log('useFeed - ownerPosts:', ownerPostsData);
         console.log('useFeed - customerPosts:', customerPostsData);
         console.log('useFeed - updatedProfile:', updatedProfile);
+
+        // 모든 게시글의 댓글 수 가져오기
+        const allPosts = [...ownerPostsData.values, ...customerPostsData.values];
+        await loadCommentCounts(allPosts);
       }
 
       // 임시 추천 데이터
@@ -162,10 +165,6 @@ export const useFeed = () => {
     navigation.navigate('Management' as never);
   };
 
-  const handleEditProfile = () => {
-    Alert.alert('프로필 편집', '프로필 편집 기능은 준비 중입니다.');
-  };
-
   const handleHideRecommendation = async () => {
     try {
       setRecommendation(prev => prev ? { ...prev, show: false } : null);
@@ -181,18 +180,42 @@ export const useFeed = () => {
     }
   };
 
+  // 댓글 수 가져오기 함수
+  const loadCommentCounts = async (posts: any[]) => {
+    try {
+      const commentCountPromises = posts.map(async (post) => {
+        try {
+          const comments = await getPostComments(post.id);
+          return { postId: post.id, count: comments.length };
+        } catch (error) {
+          console.error(`댓글 수 조회 실패 - postId: ${post.id}`, error);
+          return { postId: post.id, count: 0 };
+        }
+      });
+
+      const commentCounts = await Promise.all(commentCountPromises);
+      const commentCountMap = commentCounts.reduce((acc, { postId, count }) => {
+        acc[postId] = count;
+        return acc;
+      }, {} as Record<number, number>);
+
+      setCommentCounts(commentCountMap);
+    } catch (error) {
+      console.error('댓글 수 로드 에러:', error);
+    }
+  };
+
   return {
     selectedTab,
-    posts,
     storePosts,
     reviews,
     profile,
     recommendation,
+    commentCounts,
     loading,
     error,
     handleTabChange,
     handleWritePost,
-    handleEditProfile,
     handleHideRecommendation,
     handleRefresh,
   };

@@ -1,41 +1,7 @@
 import api from '../../../../shared/services/api';
-import { Post, Review, Profile, Recommendation, User, UserResponse, Store, StoreResponse, StorePost, StorePostsResponse, StoreOwnerPostsResponse, StoreCustomerPostsResponse, Comment } from '../types/feedTypes';
+import { Post, Review, Profile, Recommendation, StorePost, StorePostsResponse, StoreOwnerPostsResponse, StoreCustomerPostsResponse, Comment } from '../types/feedTypes';
 
-// User 정보 가져오기 API - map과 동일한 방식
-export const getUserInfo = async (userId: number) => {
-  try {
-    console.log('getUserInfo 호출 - userId:', userId);
-    console.log('API URL:', `/api/users/${userId}`);
-    
-    const response = await api.get(`/api/users/${userId}`);
-    
-    console.log('API 응답 성공:', response.status);
-    console.log('응답 데이터:', response.data);
-    
-    return response.data;
-  } catch (error: any) {
-    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
-    throw error;
-  }
-};
 
-// Store 정보 가져오기 API - map과 동일한 방식
-export const getStoreInfo = async (storeId: number) => {
-  try {
-    console.log('getStoreInfo 호출 - storeId:', storeId);
-    console.log('API URL:', `/api/stores/${storeId}`);
-    
-    const response = await api.get(`/api/stores/${storeId}`);
-    
-    console.log('API 응답 성공:', response.status);
-    console.log('응답 데이터:', response.data);
-    
-    return response.data;
-  } catch (error: any) {
-    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
-    throw error;
-  }
-};
 
 // Profile 가져오기 - userId로 storeId를 가져와서 store 정보로 profile 생성
 export const getProfile = async (userId: number): Promise<Profile> => {
@@ -43,26 +9,26 @@ export const getProfile = async (userId: number): Promise<Profile> => {
     console.log('getProfile 시작 - userId:', userId);
     
     // 1. /api/users/{userId} 호출하여 storeId 가져오기
-    const userResponse = await getUserInfo(userId);
-    console.log('User API 응답:', userResponse);
+    const userResponse = await api.get(`/api/users/${userId}`);
+    console.log('User API 응답:', userResponse.data);
     
-    if (userResponse.status !== 'success') {
+    if (userResponse.data.status !== 'success') {
       throw new Error('사용자 정보를 가져오는데 실패했습니다.');
     }
     
-    const user = userResponse.data;
+    const user = userResponse.data.data;
     const storeId = user.storeId;
     console.log('가져온 storeId:', storeId);
     
     // 2. /api/stores/{storeId} 호출하여 store 정보 가져오기
-    const storeResponse = await getStoreInfo(storeId);
-    console.log('Store API 응답:', storeResponse);
+    const storeResponse = await api.get(`/api/stores/${storeId}`);
+    console.log('Store API 응답:', storeResponse.data);
     
-    if (storeResponse.status !== 'success') {
+    if (storeResponse.data.status !== 'success') {
       throw new Error('매장 정보를 가져오는데 실패했습니다.');
     }
     
-    const store = storeResponse.data;
+    const store = storeResponse.data.data;
     
     // 3. Profile 객체 생성
     const profile: Profile = {
@@ -97,26 +63,26 @@ export const getReviews = async (userId: number): Promise<Review[]> => {
     console.log('getReviews 시작 - userId:', userId);
     
     // 1. /api/users/{userId} 호출하여 storeId 가져오기
-    const userResponse = await getUserInfo(userId);
-    console.log('User API 응답:', userResponse);
+    const userResponse = await api.get(`/api/users/${userId}`);
+    console.log('User API 응답:', userResponse.data);
     
-    if (userResponse.status !== 'success') {
+    if (userResponse.data.status !== 'success') {
       throw new Error('사용자 정보를 가져오는데 실패했습니다.');
     }
     
-    const user = userResponse.data;
+    const user = userResponse.data.data;
     const storeId = user.storeId;
     console.log('가져온 storeId:', storeId);
     
     // 2. /api/stores/{storeId} 호출하여 store 정보와 reviews 가져오기
-    const storeResponse = await getStoreInfo(storeId);
-    console.log('Store API 응답:', storeResponse);
+    const storeResponse = await api.get(`/api/stores/${storeId}`);
+    console.log('Store API 응답:', storeResponse.data);
     
-    if (storeResponse.status !== 'success') {
+    if (storeResponse.data.status !== 'success') {
       throw new Error('매장 정보를 가져오는데 실패했습니다.');
     }
     
-    const store = storeResponse.data;
+    const store = storeResponse.data.data;
     
     // 3. Store의 reviews를 Review 타입으로 변환
     if (store.reviews && store.reviews.length > 0) {
@@ -141,41 +107,7 @@ export const getReviews = async (userId: number): Promise<Review[]> => {
   }
 };
 
-// Posts 가져오기
-export const getPosts = async (): Promise<Post[]> => {
-  try {
-    console.log('getPosts 시작');
-    
-    // TODO: 실제 게시글 API가 준비되면 구현
-    // const response = await api.get('/api/posts');
-    // return response.data;
-    
-    console.log('게시글이 없음');
-    return [];
-    
-  } catch (error: any) {
-    console.error('getPosts 에러:', error);
-    return [];
-  }
-};
 
-// Store Posts 가져오기
-export const getStorePosts = async (storeId: number): Promise<StorePost[]> => {
-  try {
-    console.log('getStorePosts 시작 - storeId:', storeId);
-    
-    // TODO: 실제 매장별 게시글 API가 준비되면 구현
-    // const response = await api.get(`/api/stores/${storeId}/posts`);
-    // return response.data;
-    
-    console.log('매장 게시글이 없음');
-    return [];
-    
-  } catch (error: any) {
-    console.error('getStorePosts 에러:', error);
-    return [];
-  }
-};
 
 // 가게별 사장님 게시글 조회 API
 export const getStoreOwnerPosts = async (
@@ -296,6 +228,144 @@ export const getPostComments = async (postId: number): Promise<Comment[]> => {
     
   } catch (error: any) {
     console.error('getPostComments 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 게시글 수정 API
+export const updatePost = async (postId: number, data: {
+  content: string;
+  hashtags: string[];
+  deleteImageIds?: number[];
+}) => {
+  try {
+    const response = await api.patch(`/api/posts/${postId}`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('게시글 수정 에러:', error);
+    throw error;
+  }
+};
+
+// 게시글 삭제 API
+export const deletePost = async (postId: number) => {
+  try {
+    const response = await api.delete(`/api/posts/${postId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('게시글 삭제 에러:', error);
+    throw error;
+  }
+};
+
+// 댓글 작성 API
+export const createComment = async (postId: number, content: string) => {
+  try {
+    console.log('댓글 작성 시작 - postId:', postId, 'content:', content);
+    
+    const response = await api.post(`/api/posts/${postId}/comments`, {
+      content: content.trim()
+    });
+    
+    console.log('댓글 작성 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('댓글 작성 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 댓글 수정 API
+export const updateComment = async (commentId: number, content: string) => {
+  try {
+    console.log('댓글 수정 시작 - commentId:', commentId, 'content:', content);
+    
+    const response = await api.patch(`/api/comments/${commentId}`, {
+      content: content.trim()
+    });
+    
+    console.log('댓글 수정 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('댓글 수정 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 댓글 삭제 API
+export const deleteComment = async (commentId: number) => {
+  try {
+    console.log('댓글 삭제 시작 - commentId:', commentId);
+    
+    const response = await api.delete(`/api/comments/${commentId}`);
+    
+    console.log('댓글 삭제 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('댓글 삭제 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 게시글 좋아요 API
+export const addPostLike = async (postId: number) => {
+  try {
+    console.log('게시글 좋아요 시작 - postId:', postId);
+    
+    const response = await api.post(`/api/posts/${postId}/likes`);
+    
+    console.log('게시글 좋아요 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('게시글 좋아요 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 게시글 좋아요 취소 API
+export const removePostLike = async (postId: number) => {
+  try {
+    console.log('게시글 좋아요 취소 시작 - postId:', postId);
+    
+    const response = await api.delete(`/api/posts/${postId}/likes`);
+    
+    console.log('게시글 좋아요 취소 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('게시글 좋아요 취소 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
+};
+
+// 게시글 좋아요 상태 조회 API
+export const getPostLikeStatus = async (postId: number) => {
+  try {
+    console.log('게시글 좋아요 상태 조회 시작 - postId:', postId);
+    
+    const response = await api.get(`/api/posts/${postId}/like-status`);
+    
+    console.log('게시글 좋아요 상태 조회 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('게시글 좋아요 상태 조회 에러:', error);
     console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
     throw error;
   }

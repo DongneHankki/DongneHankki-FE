@@ -82,12 +82,17 @@ export const generateAIMarketingContent = async (image: string, keywords: string
 // 마케팅 포스트 업로드 API
 export const uploadMarketingPost = async (postData: MarketingPost): Promise<UploadResponse> => {
   try {
-    // 실제 API가 구현되기 전까지는 모의 응답을 반환
-    // const response = await api.post(`/marketing/upload`, postData);
-    // return response.data;
+    console.log('마케팅 포스트 업로드 시작:', postData);
     
-    // 모의 업로드 응답
-    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5초 지연
+    // createOwnerPostFormData를 사용하여 실제 API 호출
+    const formData = {
+      storeId: 1, // TODO: 실제 storeId 가져오기
+      content: postData.content,
+      images: [postData.image],
+      hashtags: ['#커피'] // 하드코딩된 해시태그
+    };
+    
+    const response = await createOwnerPostFormData(formData);
     
     return {
       status: 'success',
@@ -177,5 +182,55 @@ export const createOwnerPost = async (postData: OwnerPostRequest): Promise<Owner
     
     // 네트워크 에러 등
     throw new Error('게시글 작성에 실패했습니다. 네트워크를 확인해주세요.');
+  }
+};
+
+// 사장님 게시글 작성 API (multipart/form-data)
+export const createOwnerPostFormData = async (data: {
+  storeId: number;
+  content: string;
+  images: string[];
+  hashtags: string[];
+}): Promise<any> => {
+  try {
+    console.log('사장님 게시글 작성 시작:', data);
+    
+    const formData = new FormData();
+    
+    // storeId 추가
+    formData.append('storeId', data.storeId.toString());
+    
+    // content 추가
+    formData.append('content', data.content);
+    
+    // images 추가 (파일 URI를 File 객체로 변환)
+    data.images.forEach((imageUri, index) => {
+      const imageFile = {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: `image_${index}.jpg`,
+      } as any;
+      formData.append('images', imageFile);
+    });
+    
+    // hashtags 추가 (배열을 JSON 문자열로 변환)
+    formData.append('hashtags', JSON.stringify(data.hashtags));
+    
+    console.log('FormData 생성 완료');
+    
+    const response = await api.post('/api/posts/owners', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    console.log('사장님 게시글 작성 성공:', response.status);
+    console.log('응답 데이터:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('사장님 게시글 작성 에러:', error);
+    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
+    throw error;
   }
 };

@@ -8,7 +8,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 // Customer 스크린들 import
 import MapScreen from '../../features/map/screens/MapScreen';
 import RecommendScreen from '../../features/recommend/screens/RecommendScreen';
-import FeedScreen from '../../features/sns/screens/FeedScreen';
+import FeedScreen from '../../features/sns/customer/screens/CustomerMain';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 
 // Owner 스크린들 import

@@ -53,6 +53,7 @@ export interface StorePostsResponse {
 export interface Review {
   [x: string]: any;
   id: number;
+  postId?: number;
   rating: number;
   content: string;
   author?: string;
@@ -61,6 +62,8 @@ export interface Review {
   createdAt?: string;
   images?: PostImage[];
   hashtags?: string[];
+  likeCount?: number;
+  userId?: number;
 }
 
 export interface User {
