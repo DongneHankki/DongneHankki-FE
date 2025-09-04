@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { createReview, updateReview, CreateReviewRequest, Review } from '../services/reviewAPI';
+import { createReview, updateReview, CreateReviewRequest, UpdateReviewRequest, Review } from '../services/reviewAPI';
 
 interface ReviewWriteModalProps {
   visible: boolean;
   onClose: () => void;
   storeId: number;
   userId: number;
+  userType: 'owner' | 'customer' | null;
   onReviewCreated: () => void;
   existingReview?: Review | null; // 기존 리뷰 정보
 }
@@ -17,6 +18,7 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
   onClose,
   storeId,
   userId,
+  userType,
   onReviewCreated,
   existingReview
 }) => {
@@ -39,6 +41,12 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
   }, [existingReview, visible]);
 
   const handleSubmit = async () => {
+    // customer만 리뷰 작성 가능
+    if (userType !== 'customer') {
+      Alert.alert('알림', '고객만 리뷰를 작성할 수 있습니다.');
+      return;
+    }
+
     if (!content.trim()) {
       Alert.alert('알림', '리뷰 내용을 입력해주세요.');
       return;
@@ -54,13 +62,28 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
 
       if (isEditMode && existingReview) {
         // 수정 모드
-        console.log('리뷰 수정 요청:', {
-          storeId,
-          reviewId: existingReview.id,
-          reviewData
-        });
+        const updateData: UpdateReviewRequest = {
+          content: content.trim(),
+          scope
+        };
+        
+        // reviewId 또는 id 중 존재하는 것을 사용
+        const actualReviewId = existingReview.reviewId || existingReview.id;
+        
+        console.log('=== 리뷰 수정 요청 상세 ===');
+        console.log('storeId:', storeId);
+        console.log('existingReview.id:', existingReview.id);
+        console.log('existingReview.reviewId:', existingReview.reviewId);
+        console.log('actualReviewId:', actualReviewId);
+        console.log('existingReview 전체:', JSON.stringify(existingReview, null, 2));
+        console.log('updateData:', JSON.stringify(updateData, null, 2));
+        console.log('========================');
 
-        await updateReview(storeId, existingReview.id, reviewData);
+        if (!actualReviewId) {
+          throw new Error('리뷰 ID를 찾을 수 없습니다.');
+        }
+
+        await updateReview(storeId, actualReviewId, updateData);
         Alert.alert('성공', '리뷰가 수정되었습니다.');
       } else {
         // 작성 모드
@@ -90,8 +113,9 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
     return Array.from({ length: 5 }, (_, index) => (
       <TouchableOpacity
         key={index}
-        onPress={() => setScope(index + 1)}
-        style={styles.starButton}
+        onPress={() => userType === 'customer' && setScope(index + 1)}
+        style={[styles.starButton, userType !== 'customer' && styles.disabledStar]}
+        disabled={userType !== 'customer'}
       >
         <Icon
           name={index < scope ? 'star' : 'star-border'}
@@ -113,7 +137,10 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {isEditMode ? '리뷰 수정' : '리뷰 작성'}
+              {userType === 'customer' 
+                ? (isEditMode ? '리뷰 수정' : '리뷰 작성')
+                : '리뷰 보기'
+              }
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Icon name="close" size={24} color="#000" />
@@ -123,13 +150,17 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
           <View style={styles.contentSection}>
             <Text style={styles.contentLabel}>한줄 리뷰</Text>
             <TextInput
-              style={styles.contentInput}
-              placeholder="이 가게에 대한 한줄 리뷰를 작성해주세요..."
+              style={[styles.contentInput, userType !== 'customer' && styles.disabledInput]}
+              placeholder={userType === 'customer' 
+                ? "이 가게에 대한 한줄 리뷰를 작성해주세요..." 
+                : "고객만 리뷰를 작성할 수 있습니다."
+              }
               value={content}
               onChangeText={setContent}
               multiline
               numberOfLines={3}
               maxLength={100}
+              editable={userType === 'customer'}
             />
             <Text style={styles.characterCount}>{content.length}/100</Text>
           </View>
@@ -141,15 +172,17 @@ const ReviewWriteModal: React.FC<ReviewWriteModalProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            <Text style={styles.submitButtonText}>
-              {isLoading ? '처리 중...' : (isEditMode ? '수정하기' : '작성하기')}
-            </Text>
-          </TouchableOpacity>
+          {userType === 'customer' && (
+            <TouchableOpacity
+              style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              <Text style={styles.submitButtonText}>
+                {isLoading ? '처리 중...' : (isEditMode ? '수정하기' : '작성하기')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -239,6 +272,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  disabledInput: {
+    backgroundColor: '#f5f5f5',
+    color: '#999',
+  },
+  disabledStar: {
+    opacity: 0.5,
   },
 });
 

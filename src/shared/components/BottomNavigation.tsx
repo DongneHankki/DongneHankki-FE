@@ -4,17 +4,19 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // Customer 스크린들 import
 import MapScreen from '../../features/map/screens/MapScreen';
 import RecommendScreen from '../../features/recommend/screens/RecommendScreen';
-import FeedScreen from '../../features/sns/owner/screens/FeedScreen';
-import ProfileScreen from '../../features/profile/screens/ProfileScreen';
+import FeedScreen from '../../features/sns/customer/screens/CustomerMain';
+import CustomerInfoScreen from '../../features/profile/screens/CustomerInfoScreen';
+import OwnerInfoScreen from '../../features/profile/screens/OwnerInfoScreen';
+import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
 
 // Owner 스크린들 import
 import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
 import StorePostingScreen from '../../features/store/screens/StorePostingScreen';
-import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
 import PostDetailScreen from '../../features/sns/owner/screens/PostDetailScreen';
 
 // 인증 체크 훅 import
@@ -35,11 +37,21 @@ const StoreManagementStack = () => {
   );
 };
 
+// Customer용 SNS 스택 네비게이션
+const CustomerSNSStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CustomerFeed" component={FeedScreen} />
+      <Stack.Screen name="OwnerFeed" component={OwnerFeedScreen} />
+    </Stack.Navigator>
+  );
+};
+
 // SNS 탭 내부의 스택 네비게이션 (Owner용)
 const OwnerSNSStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OwnerFeed" component={OwnerFeedScreen} />
+      <Stack.Screen name="Feed" component={OwnerFeedScreen} />
       <Stack.Screen name="PostDetail" component={PostDetailScreen} />
     </Stack.Navigator>
   );
@@ -57,17 +69,16 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     if (userType === 'customer') {
       return [
         { name: 'Map', component: MapScreen, label: '지도' },
-        { name: 'Subscribe', component: FeedScreen, label: 'SNS' },
+        { name: 'Subscribe', component: CustomerSNSStack, label: 'SNS' },
         { name: 'Recommend', component: RecommendScreen, label: '추천' },
-        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
+        { name: 'Profile', component: CustomerInfoScreen, label: '내 정보' },
       ];
     } else {
       return [
         { name: 'Map', component: MapScreen, label: '지도' },
         { name: 'Subscribe', component: OwnerSNSStack, label: 'SNS' },
         { name: 'Management', component: StoreManagementStack, label: '점포관리' },
-        { name: 'Profile', component: ProfileScreen, label: '내 정보' },
-
+        { name: 'Profile', component: OwnerInfoScreen, label: '내 정보' },
       ];
     }
   };
@@ -86,8 +97,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     ];
 
     // Owner 전용 아이콘
-    const OWNER_ICONS: any[] = [
-      // Management는 제거됨
+    const OWNER_ICONS = [
+      { name: 'Management', label: '점포관리', icon: 'edit', activeIcon: 'edit', type: 'FontAwesome' },
     ];
 
     // 모든 아이콘을 합침
@@ -104,6 +115,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
         return <FontAwesome name={iconName} size={size} color={color} />;
       } else if (tabIcon.type === 'MaterialCommunityIcons') {
         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+      } else if (tabIcon.type === 'MaterialIcons') {
+        return <MaterialIcons name={iconName} size={size} color={color} />;
       }
     }
     

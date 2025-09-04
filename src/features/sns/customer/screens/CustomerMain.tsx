@@ -1,5 +1,4 @@
-// App.js 또는 FollowScreen.js
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  TextInput
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -41,6 +41,9 @@ const ReviewItem = ({ shopName, reviewText, date }: ReviewItemProps) => (
 
 export default function FollowScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const [searchText, setSearchText] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   const reviews = [
     {
@@ -69,18 +72,94 @@ export default function FollowScreen() {
     }
   ];
 
+  // 검색 기능 구현
+  const handleSearch = async (text: string) => {
+    setSearchText(text);
+    
+    if (text.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      // 실제 API 호출 대신 임시 데이터로 검색 시뮬레이션
+      const mockStores = [
+        { id: 1, name: "가게1", storeId: 14, type: "restaurant" },
+        { id: 2, name: "가게2", storeId: 102, type: "cafe" },
+        { id: 3, name: "가게3", storeId: 103, type: "restaurant" },
+        { id: 4, name: "가게4", storeId: 104, type: "cafe" },
+        { id: 5, name: "맛있는 치킨집", storeId: 105, type: "restaurant" },
+        { id: 6, name: "스타벅스 강남점", storeId: 106, type: "cafe" },
+      ];
+
+      const filtered = mockStores.filter(store => 
+        store.name.toLowerCase().includes(text.toLowerCase())
+      );
+
+      setSearchResults(filtered);
+    } catch (error) {
+      console.error('검색 오류:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleStoreSelect = (store: any) => {
+    // 특정 Owner의 FeedScreen으로 이동
+    navigation.navigate('OwnerFeed', { 
+      storeId: store.storeId,
+      storeName: store.name,
+      userType: 'customer' // customer가 owner 화면을 보는 것임을 표시
+    });
+    
+    // 검색창 초기화
+    setSearchText('');
+    setSearchResults([]);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FBA542" barStyle="dark-content" />
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoStar}>⭐</Text>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="가게 이름으로 검색"
+              placeholderTextColor="#999"
+              value={searchText}
+              onChangeText={handleSearch}
+            />
+          </View>
+          
+          {/* 검색 결과 표시 */}
+          {searchResults.length > 0 && (
+            <View style={styles.searchResults}>
+              {searchResults.map((store) => (
+                <TouchableOpacity
+                  key={store.id}
+                  style={styles.searchResultItem}
+                  onPress={() => handleStoreSelect(store)}
+                >
+                  <Icon 
+                    name={store.type === 'restaurant' ? 'restaurant' : 'local-cafe'} 
+                    size={20} 
+                    color="#666" 
+                  />
+                  <Text style={styles.searchResultText}>{store.name}</Text>
+                  <Icon name="chevron-right" size={16} color="#999" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
-        <TouchableOpacity style={styles.searchButton}>
-          <Icon name="search" size={30} color="#121212" />
-        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -137,6 +216,68 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     padding: 8,
+  },
+  searchContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  searchResults: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginTop: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1000,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  searchResultText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
   },
   content: {
     flex: 1,
