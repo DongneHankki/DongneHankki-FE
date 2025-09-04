@@ -97,7 +97,7 @@ const StoreManagementScreen: React.FC = () => {
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>오늘의 마케팅</Text>
           <View style={styles.promptContainer}>
-            <Icon name="sparkles" size={16} color="#FF6B35" />
+            <Icon name="sparkles" size={16} color="#FBA542" />
             <Text style={styles.promptText}>마감 청소 후 사진을 올려볼까요?</Text>
           </View>
         </View>
@@ -131,7 +131,7 @@ const StoreManagementScreen: React.FC = () => {
           onPress={handleAIGeneration}
           disabled={!selectedImage}
         >
-          <Icon name="sparkles" size={20} color={selectedImage ? "#FF6B35" : "#ccc"} />
+          <Icon name="sparkles" size={20} color={selectedImage ? "#FBA542" : "#ccc"} />
           <Text style={[styles.aiButtonText, !selectedImage && styles.aiButtonTextDisabled]}>
             AI 마케팅 글 생성하기
           </Text>

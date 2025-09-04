@@ -80,7 +80,7 @@ const FeedScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B35" />
+        <ActivityIndicator size="large" color="#FBA542" />
         <Text style={styles.loadingText}>데이터 로딩 중...</Text>
       </View>
     );
@@ -227,7 +227,7 @@ const FeedScreen = () => {
                             <Icon 
                               name={(likedPosts.has(post.postId) || post.liked) ? "thumb-up" : "thumb-up-outline"} 
                               size={16} 
-                              color={(likedPosts.has(post.postId) || post.liked) ? "#FF6B35" : "#666"} 
+                              color={(likedPosts.has(post.postId) || post.liked) ? "#FBA542" : "#666"} 
                             />
                             <Text style={[
                               styles.actionText, 
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#FF6B35',
+    borderBottomColor: '#FBA542',
   },
   tabText: {
     fontSize: 16,
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: 80,
-    height: 80,
+    height: 120,
     borderRadius: 8,
     marginRight: 12,
   },
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   },
   // 좋아요 스타일
   likedText: {
-    color: '#FF6B35',
+    color: '#FBA542',
     fontWeight: '600',
   },
   reviewsContainer: {

@@ -420,7 +420,7 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF6B35" />
+          <ActivityIndicator size="large" color="#FBA542" />
           <Text style={styles.loadingText}>로딩 중...</Text>
         </View>
       </SafeAreaView>
@@ -559,7 +559,7 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
             <Icon 
               name={isLiked ? "thumb-up" : "thumb-up-outline"} 
               size={20} 
-              color={isLiked ? "#FF6B35" : "#666"} 
+              color={isLiked ? "#FBA542" : "#666"} 
             />
             <Text style={[styles.actionText, isLiked && styles.likedText]}>
               {likeCount}
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
   },
   // 좋아요 스타일
   likedText: {
-    color: '#FF6B35',
+    color: '#FBA542',
     fontWeight: '600',
   },
   commentsSection: {
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
   },
   modalSaveText: {
     fontSize: 16,
-    color: '#FF6B35',
+    color: '#FBA542',
     fontWeight: '600',
   },
   modalSaveTextDisabled: {
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   backToListButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -1069,7 +1069,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   commentSubmitButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#FBA542',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 8,
@@ -1145,8 +1145,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   commentEditButtonPrimary: {
-    backgroundColor: '#FF6B35',
-    borderColor: '#FF6B35',
+    backgroundColor: '#FBA542',
+    borderColor: '#FBA542',
   },
   commentEditButtonText: {
     fontSize: 14,

@@ -26,7 +26,7 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
       key={index}
       name="star"
       size={16}
-      color={index < rating ? '#FF9500' : '#E0E0E0'}
+      color={index < rating ? '#FBA542' : '#E0E0E0'}
       style={styles.star}
     />
   ));
