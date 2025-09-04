@@ -10,7 +10,7 @@ export const useFCM = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const { isAuthenticated, accessToken } = useAuthStore();
   const retryCount = useRef(0);
-  const maxRetries = 10; // 최대 10번 재시도
+  const maxRetries = 10; 
 
   // Firebase 앱 준비 상태 확인
   useEffect(() => {

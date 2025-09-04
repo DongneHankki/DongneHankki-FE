@@ -12,19 +12,22 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { createOwnerPost, createOwnerPostFormData } from '../services/storeApi';
-import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { createOwnerPost } from '../services/storeApi';
 
 interface StorePostingScreenProps {
   postingParams?: {
     image: string;
     content: string;
+    storeId?: number;
   };
 }
 
-const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }) => {
+const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const postingParams = route.params as any;
+  
   const [isEditing, setIsEditing] = useState(false);
   const [marketingContent, setMarketingContent] = useState(postingParams?.content || "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
   const [isUploading, setIsUploading] = useState(false);
@@ -67,8 +70,13 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
         ? extractedHashtags 
         : ['#마케팅', '#가게홍보'];
 
+      // 전 화면에서 받아온 storeId 사용 (없으면 기본값 1)
+      const storeId = postingParams?.storeId || 1;
+      console.log('StorePostingScreen - postingParams:', postingParams);
+      console.log('StorePostingScreen - storeId:', storeId);
+
       const postData = {
-        storeId: 1, 
+        storeId: storeId, 
         content: marketingContent.trim(),
         images: [postingParams.image],
         hashtags: hashtags
@@ -76,8 +84,8 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
 
       console.log('게시글 작성 데이터:', postData);
 
-      // FormData로 API 호출
-      await createOwnerPostFormData(postData);
+      // API 호출
+      await createOwnerPost(postData);
       
       Alert.alert('성공', '게시글이 성공적으로 작성되었습니다!');
       
@@ -92,9 +100,7 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* 뒤로 가기 버튼 */}
-      
+    <SafeAreaView style={styles.container}>      
       {/* 로딩 오버레이 */}
       {(isUploading) && (
         <View style={styles.loadingOverlay}>

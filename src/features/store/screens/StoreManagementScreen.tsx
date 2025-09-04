@@ -15,8 +15,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { common } from '../../../shared/styles/commonAuthStyles';
 import { useImagePicker } from '../hooks/useImagePicker';
-import { generateAIMarketingContent, uploadMarketingPost } from '../services/storeApi';
+import { generateAIMarketingContent, uploadMarketingPost, getUserInfo } from '../services/storeApi';
 import { MarketingPost } from '../types/storeTypes';
+import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 const StoreManagementScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -34,7 +35,9 @@ const StoreManagementScreen: React.FC = () => {
 
     setIsGeneratingAI(true);
     try {
-      const aiContent = await generateAIMarketingContent(selectedImage);
+      // basicContent의 현재 값을 키워드로 사용
+      const keywords = basicContent.trim() || '커피';
+      const aiContent = await generateAIMarketingContent(selectedImage, keywords);
       setBasicContent(aiContent);
       Alert.alert('성공', 'AI 마케팅 글이 생성되었습니다!');
     } catch (error: any) {
@@ -56,6 +59,11 @@ const StoreManagementScreen: React.FC = () => {
 
     setIsUploading(true);
     try {
+      // keychain에서 storeId 가져오기
+      const tokenData = await getTokenFromLocal();
+      const userInfo = await getUserInfo(tokenData?.userId || '1');
+      const storeId = userInfo?.storeId || 1;
+
       const postData: MarketingPost = {
         image: selectedImage,
         content: basicContent.trim(),
@@ -63,8 +71,12 @@ const StoreManagementScreen: React.FC = () => {
 
       await uploadMarketingPost(postData);
 
-      // 성공 후 다음 페이지로 이동
-      navigation.navigate('StorePosting' as never);
+      // 성공 후 다음 페이지로 이동 (이미지와 내용 전달)
+      (navigation as any).navigate('StorePosting', {
+        image: selectedImage,
+        content: basicContent.trim(),
+        storeId: storeId,
+      });
     } catch (error: any) {
       Alert.alert('오류', error.message);
     } finally {
@@ -125,14 +137,17 @@ const StoreManagementScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* 기본 내용 입력 섹션 */}
+        {/* 키워드/내용 입력 섹션 */}
         <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>기본 내용</Text>
+          <Text style={styles.sectionTitle}>키워드 또는 마케팅 내용</Text>
+          <Text style={styles.sectionSubtitle}>
+            AI 생성 시: 키워드로 사용됩니다 (예: 커피, 음료, 디저트)
+          </Text>
           <TextInput
             style={styles.contentInput}
             value={basicContent}
             onChangeText={setBasicContent}
-            placeholder="마케팅 내용을 입력하거나 AI로 생성해보세요"
+            placeholder="키워드를 입력하거나 마케팅 내용을 직접 작성하세요"
             multiline
             textAlignVertical="top"
           />
@@ -187,7 +202,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 12,
+    lineHeight: 20,
   },
   uploadArea: {
     width: '100%',

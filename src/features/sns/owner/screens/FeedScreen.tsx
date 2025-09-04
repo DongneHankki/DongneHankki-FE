@@ -39,7 +39,6 @@ const FeedScreen = () => {
 
   // 좋아요 관련 상태
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
-  const [postLikeCounts, setPostLikeCounts] = useState<Record<number, number>>({});
   const [isLiking, setIsLiking] = useState(false);
 
   const handlePostPress = (post: any) => {
@@ -67,17 +66,9 @@ const FeedScreen = () => {
           newSet.delete(post.postId);
           return newSet;
         });
-        setPostLikeCounts(prev => ({
-          ...prev,
-          [post.postId]: Math.max(0, (prev[post.postId] || post.likeCount) - 1)
-        }));
       } else {
         await addPostLike(post.postId);
         setLikedPosts(prev => new Set(prev).add(post.postId));
-        setPostLikeCounts(prev => ({
-          ...prev,
-          [post.postId]: (prev[post.postId] || post.likeCount) + 1
-        }));
       }
     } catch (error: any) {
       Alert.alert('오류', error.message || '좋아요 처리에 실패했습니다.');
@@ -132,8 +123,10 @@ const FeedScreen = () => {
             source={profile.image || require('../../../../shared/images/profile.png')} 
             style={styles.profileImage}
           />
-          <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
-          <Icon name="silverware-fork-knife" size={16} color="#666" />
+          <View style={styles.restaurantNameContainer}>
+            <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
+            <Icon style={styles.restaurantNameIcon} name="silverware-fork-knife" size={23} color="#000" />
+          </View>
           <Text style={styles.address}>{profile.address}</Text>
           
           {/* 별점 */}
@@ -240,7 +233,7 @@ const FeedScreen = () => {
                               styles.actionText, 
                               (likedPosts.has(post.postId) || post.liked) && styles.likedText
                             ]}>
-                              {postLikeCounts[post.postId] !== undefined ? postLikeCounts[post.postId] : post.likeCount}
+                              {post.likeCount || 0}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -341,7 +334,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingTop: 50,
+    paddingBottom: 15,
     backgroundColor: '#fff',
   },
   editButton: {
@@ -357,6 +351,15 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
+  },
+  restaurantNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  restaurantNameIcon: {
+    marginLeft: 5,
+    marginBottom: 3,
   },
   restaurantName: {
     fontSize: 24,

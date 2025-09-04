@@ -536,7 +536,10 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
           {displayData.hashtags && displayData.hashtags.length > 0 && (
             <View style={styles.hashtagContainer}>
               {displayData.hashtags.map((hashtag, index) => (
-                <Text key={index} style={styles.hashtag}>{hashtag}</Text>
+                <View key={index} style={styles.hashtagButton}>
+                  <Icon name="map-marker" size={12} color="#666" />
+                  <Text style={styles.hashtagText}>{hashtag.replace('#', '')}</Text>
+                </View>
               ))}
             </View>
           )}
@@ -601,20 +604,22 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
                   <View style={styles.commentHeaderRight}>
                     <Text style={styles.commentTime}>{formatDate(comment.createdAt)}</Text>
                     {isMyComment(comment) && (
-                      <View style={styles.commentActions}>
-                        <TouchableOpacity 
-                          style={styles.commentActionButton}
-                          onPress={() => handleEditComment(comment)}
-                        >
-                          <Icon name="pencil" size={16} color="#666" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.commentActionButton}
-                          onPress={() => handleDeleteComment(comment.id)}
-                        >
-                          <Icon name="delete" size={16} color="#FF4444" />
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity 
+                        style={styles.commentActionButton}
+                        onPress={() => {
+                          Alert.alert(
+                            '댓글 옵션',
+                            '댓글을 수정하거나 삭제하시겠습니까?',
+                            [
+                              { text: '취소', style: 'cancel' },
+                              { text: '수정', onPress: () => handleEditComment(comment) },
+                              { text: '삭제', style: 'destructive', onPress: () => handleDeleteComment(comment.id) }
+                            ]
+                          );
+                        }}
+                      >
+                        <Icon name="dots-vertical" size={16} color="#666" />
+                      </TouchableOpacity>
                     )}
                   </View>
                 </View>
@@ -649,7 +654,18 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.commentContent}>{comment.content}</Text>
+                  <View>
+                    <Text style={styles.commentContent}>{comment.content}</Text>
+                    <View style={styles.commentActions}>
+                      <TouchableOpacity style={styles.commentLikeButton}>
+                        <Icon name="thumb-up-outline" size={14} color="#666" />
+                        <Text style={styles.commentLikeText}>{comment.likeCount || 0}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.commentReplyButton}>
+                        <Text style={styles.commentReplyText}>답글쓰기</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 )}
               </View>
             ))
@@ -829,12 +845,22 @@ const styles = StyleSheet.create({
   hashtagContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    marginTop: 10,
   },
-  hashtag: {
+  hashtagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  hashtagText: {
     fontSize: 14,
-    color: '#FF6B35',
-    marginRight: 10,
-    marginBottom: 5,
+    color: '#666',
+    marginLeft: 4,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -1070,10 +1096,28 @@ const styles = StyleSheet.create({
   },
   commentActions: {
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 16,
   },
   commentActionButton: {
     padding: 4,
+  },
+  commentLikeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  commentLikeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  commentReplyButton: {
+    // 답글 버튼 스타일
+  },
+  commentReplyText: {
+    fontSize: 12,
+    color: '#666',
   },
   commentEditContainer: {
     marginTop: 8,

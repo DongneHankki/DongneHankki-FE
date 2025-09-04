@@ -26,6 +26,8 @@ export interface Comment {
   nickname: string;
   createdAt: string;
   updatedAt: string;
+  likeCount?: number;
+  liked?: boolean;
 }
 
 export interface StorePost {
