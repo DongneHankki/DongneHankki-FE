@@ -17,9 +17,9 @@ import { useFeed } from '../hooks/useFeed';
 import { addPostLike, removePostLike } from '../services/feedApi';
 
 const { width } = Dimensions.get('window');
-const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
+const imageSize = (width - 60) / 3;
 const reviewImageWidth = imageSize;
-const reviewImageHeight = (imageSize * 3) / 2; // 2:3 비율
+const reviewImageHeight = (imageSize * 3) / 2;
 
 const FeedScreen = () => {
   const navigation = useNavigation();
@@ -29,7 +29,6 @@ const FeedScreen = () => {
     reviews,
     profile,
     recommendation,
-    commentCounts,
     loading,
     error,
     handleTabChange,
@@ -54,30 +53,30 @@ const FeedScreen = () => {
   };
 
   // 게시물 좋아요 토글
-  const handlePostLikeToggle = async (postId: number) => {
+  const handlePostLikeToggle = async (post: any) => {
     if (isLiking) return;
     
     setIsLiking(true);
     try {
-      const isCurrentlyLiked = likedPosts.has(postId);
+      const isCurrentlyLiked = likedPosts.has(post.postId) || post.liked;
       
       if (isCurrentlyLiked) {
-        await removePostLike(postId);
+        await removePostLike(post.postId);
         setLikedPosts(prev => {
           const newSet = new Set(prev);
-          newSet.delete(postId);
+          newSet.delete(post.postId);
           return newSet;
         });
         setPostLikeCounts(prev => ({
           ...prev,
-          [postId]: Math.max(0, (prev[postId] || 0) - 1)
+          [post.postId]: Math.max(0, (prev[post.postId] || post.likeCount) - 1)
         }));
       } else {
-        await addPostLike(postId);
-        setLikedPosts(prev => new Set(prev).add(postId));
+        await addPostLike(post.postId);
+        setLikedPosts(prev => new Set(prev).add(post.postId));
         setPostLikeCounts(prev => ({
           ...prev,
-          [postId]: (prev[postId] || 0) + 1
+          [post.postId]: (prev[post.postId] || post.likeCount) + 1
         }));
       }
     } catch (error: any) {
@@ -225,21 +224,21 @@ const FeedScreen = () => {
                         <View style={styles.postActions}>
                           <View style={styles.actionItem}>
                             <Icon name="comment-outline" size={16} color="#666" />
-                            <Text style={styles.actionText}>{commentCounts[post.postId] || 0}</Text>
+                            <Text style={styles.actionText}>{post.commentCount || 0}</Text>
                           </View>
                           <TouchableOpacity 
                             style={styles.actionItem} 
-                            onPress={() => handlePostLikeToggle(post.postId)}
+                            onPress={() => handlePostLikeToggle(post)}
                             disabled={isLiking}
                           >
                             <Icon 
-                              name={likedPosts.has(post.postId) ? "thumb-up" : "thumb-up-outline"} 
+                              name={(likedPosts.has(post.postId) || post.liked) ? "thumb-up" : "thumb-up-outline"} 
                               size={16} 
-                              color={likedPosts.has(post.postId) ? "#FF6B35" : "#666"} 
+                              color={(likedPosts.has(post.postId) || post.liked) ? "#FF6B35" : "#666"} 
                             />
                             <Text style={[
                               styles.actionText, 
-                              likedPosts.has(post.postId) && styles.likedText
+                              (likedPosts.has(post.postId) || post.liked) && styles.likedText
                             ]}>
                               {postLikeCounts[post.postId] !== undefined ? postLikeCounts[post.postId] : post.likeCount}
                             </Text>

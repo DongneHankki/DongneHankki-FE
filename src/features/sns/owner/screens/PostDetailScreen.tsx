@@ -16,7 +16,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, RouteProp } from '@react-navigation/native';
 import { Post, Comment, Review } from '../types/feedTypes';
-import { getPostDetail, getPostComments, updatePost, deletePost, createComment, updateComment, deleteComment, addPostLike, removePostLike, getPostLikeStatus } from '../services/feedApi';
+import { getPostDetail, getPostComments, updatePost, deletePost, createComment, updateComment, deleteComment, addPostLike, removePostLike } from '../services/feedApi';
 
 const { width, height } = Dimensions.get('window');
 
@@ -85,10 +85,32 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
 
         setPost(postDetail);
         setComments(postComments);
-      } else if (type === 'review' && initialReview) {
-        const reviewComments = await getPostComments(initialReview.id);
-        setReview(initialReview);
+        // API 응답에서 좋아요 상태 설정
+        setIsLiked(postDetail.liked || false);
+        setLikeCount(postDetail.likeCount || 0);
+      } else if (type === 'review' && initialReview && initialReview.postId) {
+        const [reviewDetail, reviewComments] = await Promise.all([
+          getPostDetail(initialReview.postId),
+          getPostComments(initialReview.postId)
+        ]);
+        
+        // Post 타입을 Review 타입으로 변환
+        const reviewData: Review = {
+          ...initialReview,
+          postId: reviewDetail.postId,
+          content: reviewDetail.content,
+          images: reviewDetail.images,
+          hashtags: reviewDetail.hashtags,
+          likeCount: reviewDetail.likeCount,
+          liked: reviewDetail.liked,
+          createdAt: reviewDetail.createdAt
+        };
+        
+        setReview(reviewData);
         setComments(reviewComments);
+        // API 응답에서 좋아요 상태 설정
+        setIsLiked(reviewDetail.liked || false);
+        setLikeCount(reviewDetail.likeCount || 0);
       }
     } catch (err: any) {
       console.error('데이터 로드 에러:', err);
@@ -366,6 +388,34 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
     return true; // 임시로 모든 댓글에 수정/삭제 버튼 표시
   };
 
+  // 좋아요 토글
+  const handleLikeToggle = async () => {
+    if (isLiking) return;
+    
+    const postId = post?.postId || review?.postId;
+    if (!postId) {
+      Alert.alert('오류', '게시글 정보를 찾을 수 없습니다.');
+      return;
+    }
+    
+    setIsLiking(true);
+    try {
+      if (isLiked) {
+        await removePostLike(postId);
+        setIsLiked(false);
+        setLikeCount(prev => Math.max(0, prev - 1));
+      } else {
+        await addPostLike(postId);
+        setIsLiked(true);
+        setLikeCount(prev => prev + 1);
+      }
+    } catch (error: any) {
+      Alert.alert('오류', error.message || '좋아요 처리에 실패했습니다.');
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -498,10 +548,20 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
             <Icon name="comment-outline" size={20} color="#666" />
             <Text style={styles.actionText}>{comments.length}</Text>
           </View>
-          <View style={styles.actionItem}>
-            <Icon name="thumb-up-outline" size={20} color="#666" />
-            <Text style={styles.actionText}>{displayData.likeCount}</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.actionItem}
+            onPress={handleLikeToggle}
+            disabled={isLiking}
+          >
+            <Icon 
+              name={isLiked ? "thumb-up" : "thumb-up-outline"} 
+              size={20} 
+              color={isLiked ? "#FF6B35" : "#666"} 
+            />
+            <Text style={[styles.actionText, isLiked && styles.likedText]}>
+              {likeCount}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 댓글 섹션 */}
@@ -798,6 +858,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 5,
+  },
+  // 좋아요 스타일
+  likedText: {
+    color: '#FF6B35',
+    fontWeight: '600',
   },
   commentsSection: {
     padding: 20,

@@ -9,7 +9,9 @@ export interface Post {
   images: PostImage[];
   hashtags: string[];
   likeCount: number;
+  commentCount: number;
   createdAt: string;
+  liked: boolean;
 }
 
 export interface PostImage {
@@ -37,7 +39,9 @@ export interface StorePost {
   images: PostImage[];
   hashtags: string[];
   likeCount: number;
+  commentCount: number;
   createdAt: string;
+  liked: boolean;
 }
 
 export interface StorePostsResponse {
@@ -63,6 +67,7 @@ export interface Review {
   images?: PostImage[];
   hashtags?: string[];
   likeCount?: number;
+  liked?: boolean;
   userId?: number;
 }
 

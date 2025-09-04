@@ -1,8 +1,6 @@
 import api from '../../../../shared/services/api';
 import { Post, Review, Profile, Recommendation, StorePost, StorePostsResponse, StoreOwnerPostsResponse, StoreCustomerPostsResponse, Comment } from '../types/feedTypes';
 
-
-
 // Profile 가져오기 - userId로 storeId를 가져와서 store 정보로 profile 생성
 export const getProfile = async (userId: number): Promise<Profile> => {
   try {
@@ -353,20 +351,3 @@ export const removePostLike = async (postId: number) => {
   }
 };
 
-// 게시글 좋아요 상태 조회 API
-export const getPostLikeStatus = async (postId: number) => {
-  try {
-    console.log('게시글 좋아요 상태 조회 시작 - postId:', postId);
-    
-    const response = await api.get(`/api/posts/${postId}/like-status`);
-    
-    console.log('게시글 좋아요 상태 조회 성공:', response.status);
-    console.log('응답 데이터:', response.data);
-    
-    return response.data;
-  } catch (error: any) {
-    console.error('게시글 좋아요 상태 조회 에러:', error);
-    console.error('에러 응답 데이터:', JSON.stringify(error.response?.data, null, 2));
-    throw error;
-  }
-};

@@ -7,8 +7,7 @@ import {
   getReviews,
   getProfile,
   getStoreOwnerPosts,
-  getStoreCustomerPosts,
-  getPostComments
+  getStoreCustomerPosts
 } from '../services/feedApi';
 
 export const useFeed = () => {
@@ -24,7 +23,6 @@ export const useFeed = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,9 +132,6 @@ export const useFeed = () => {
         console.log('useFeed - customerPosts:', customerPostsData);
         console.log('useFeed - updatedProfile:', updatedProfile);
 
-        // 모든 게시글의 댓글 수 가져오기
-        const allPosts = [...ownerPostsData.values, ...customerPostsData.values];
-        await loadCommentCounts(allPosts);
       }
 
       // 임시 추천 데이터
@@ -180,30 +175,6 @@ export const useFeed = () => {
     }
   };
 
-  // 댓글 수 가져오기 함수
-  const loadCommentCounts = async (posts: any[]) => {
-    try {
-      const commentCountPromises = posts.map(async (post) => {
-        try {
-          const comments = await getPostComments(post.id);
-          return { postId: post.id, count: comments.length };
-        } catch (error) {
-          console.error(`댓글 수 조회 실패 - postId: ${post.id}`, error);
-          return { postId: post.id, count: 0 };
-        }
-      });
-
-      const commentCounts = await Promise.all(commentCountPromises);
-      const commentCountMap = commentCounts.reduce((acc, { postId, count }) => {
-        acc[postId] = count;
-        return acc;
-      }, {} as Record<number, number>);
-
-      setCommentCounts(commentCountMap);
-    } catch (error) {
-      console.error('댓글 수 로드 에러:', error);
-    }
-  };
 
   return {
     selectedTab,
@@ -211,7 +182,6 @@ export const useFeed = () => {
     reviews,
     profile,
     recommendation,
-    commentCounts,
     loading,
     error,
     handleTabChange,
