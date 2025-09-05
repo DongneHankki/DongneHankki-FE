@@ -537,7 +537,7 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
             <View style={styles.hashtagContainer}>
               {displayData.hashtags.map((hashtag, index) => (
                 <View key={index} style={styles.hashtagButton}>
-                  <Text style={styles.hashtagText}>{hashtag}</Text>
+                  <Text style={styles.hashtagText}># {hashtag}</Text>
                 </View>
               ))}
             </View>

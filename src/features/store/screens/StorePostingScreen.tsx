@@ -86,8 +86,7 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
       
       Alert.alert('성공', '게시글이 성공적으로 작성되었습니다!');
       
-      // 업로드 성공 후 StoreManagementScreen으로 돌아가기
-      navigation.goBack();
+      (navigation as any).navigate('Subscribe', { screen: 'Feed' });  
     } catch (error: any) {
       console.error('게시글 작성 에러:', error);
       Alert.alert('오류', error.message || '게시글 작성에 실패했습니다.');

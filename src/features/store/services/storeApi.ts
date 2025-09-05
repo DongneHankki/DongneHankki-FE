@@ -132,6 +132,7 @@ export const generateAIMarketingContent = async (image: string, keywords: string
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 10000000,
     });
     
     console.log('AI API 응답 성공:', response.status);
