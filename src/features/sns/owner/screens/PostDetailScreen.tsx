@@ -537,8 +537,7 @@ const PostDetailScreen = ({ route }: PostDetailScreenProps) => {
             <View style={styles.hashtagContainer}>
               {displayData.hashtags.map((hashtag, index) => (
                 <View key={index} style={styles.hashtagButton}>
-                  <Icon name="map-marker" size={12} color="#666" />
-                  <Text style={styles.hashtagText}>{hashtag.replace('#', '')}</Text>
+                  <Text style={styles.hashtagText}>{hashtag}</Text>
                 </View>
               ))}
             </View>

@@ -33,11 +33,6 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
   const [marketingContent, setMarketingContent] = useState(postingParams?.content);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 디버깅을 위한 로그
-  console.log('StorePostingScreen - postingParams:', postingParams);
-  console.log('StorePostingScreen - marketingContent:', marketingContent);
-  console.log('StorePostingScreen - hashtags:', postingParams?.hashtags);
-
   // route params에서 이미지와 내용을 받아옴
   const imageUri = postingParams?.image || require('../../../shared/images/food.png');
 
