@@ -7,10 +7,14 @@ import { useAuthStore } from '../../../shared/store/authStore';
 import ReviewCard from './ReviewCard';
 import ReviewWriteModal from './ReviewWriteModal';
 import { getStoreDetail } from '../services/StoresAPI';
+import { getStoreSnsPosts } from '../services/SnsAPI';
 
 
 const StoreDetail = React.memo(({ store, onBack }) => {
   const [isWriteModalVisible, setIsWriteModalVisible] = useState(false);
+  const [snsPosts, setSnsPosts] = useState([]);
+  const [snsLoading, setSnsLoading] = useState(false);
+  const [snsError, setSnsError] = useState(null);
   const { storeList } = useMapStore();
   const { 
     storeDetail, 
@@ -56,6 +60,9 @@ const StoreDetail = React.memo(({ store, onBack }) => {
         console.log('storeData.avgStar:', storeData.avgStar);
         console.log('storeData.owner:', storeData.owner);
         console.log('storeData.menus:', storeData.menus);
+        console.log('storeData.recentReviewImageUrls:', storeData.recentReviewImageUrls);
+        console.log('storeData.recentReviewImageUrls 타입:', typeof storeData.recentReviewImageUrls);
+        console.log('storeData.recentReviewImageUrls 길이:', storeData.recentReviewImageUrls?.length);
         
         setStoreDetail(storeData);
         console.log('marketStore에 storeDetail 저장 완료');
@@ -73,6 +80,68 @@ const StoreDetail = React.memo(({ store, onBack }) => {
 
     fetchStoreDetail();
   }, [store?.storeId, setStoreDetail, setLoading, setError]);
+
+  // SNS 포스트 데이터 가져오기
+  useEffect(() => {
+    console.log('=== SNS useEffect 실행됨 ===');
+    console.log('store 객체:', store);
+    console.log('store.storeId:', store?.storeId);
+    console.log('store.storeId 타입:', typeof store?.storeId);
+    
+    if (!store?.storeId) {
+      console.log('❌ storeId가 없어서 SNS API 호출을 건너뜁니다.');
+      console.log('store 객체 전체:', JSON.stringify(store, null, 2));
+      return;
+    }
+
+    const fetchSnsPosts = async () => {
+      console.log('=== SNS 포스트 API 호출 시작 ===');
+      console.log('호출할 storeId:', store.storeId);
+      console.log('storeId 타입:', typeof store.storeId);
+      
+      setSnsLoading(true);
+      setSnsError(null);
+      
+      try {
+        console.log('getStoreSnsPosts 함수 호출 직전');
+        const response = await getStoreSnsPosts(store.storeId);
+        console.log('✅ SNS 포스트 API 응답 성공:', response);
+        console.log('응답 전체 구조:', JSON.stringify(response, null, 2));
+        
+        const posts = response.data?.values || [];
+        console.log('추출된 SNS 포스트 배열:', posts);
+        console.log('포스트 개수:', posts.length);
+        
+        if (posts.length > 0) {
+          console.log('첫 번째 포스트 예시:', JSON.stringify(posts[0], null, 2));
+        }
+        
+        setSnsPosts(posts);
+        console.log('✅ SNS 포스트 state 저장 완료');
+        
+      } catch (error) {
+        console.error('❌ SNS 포스트 가져오기 실패:', error);
+        console.error('에러 상세 정보:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
+        });
+        setSnsError(error);
+        setSnsPosts([]);
+      } finally {
+        setSnsLoading(false);
+        console.log('=== SNS API 호출 완료 ===');
+      }
+    };
+
+    fetchSnsPosts();
+  }, [store?.storeId]);
   
   // 업종 아이콘을 useMemo로 최적화
   const industryIcon = useMemo(() => {
@@ -279,43 +348,173 @@ const StoreDetail = React.memo(({ store, onBack }) => {
   }, [storeDetail?.reviews, loading, userId, handleReviewDeleted]);
 
   // 메뉴 아이템들을 useMemo로 최적화
-  const menuItems = useMemo(() => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View style={styles.menuItem}>
-        <View style={styles.menuImagePlaceholder}>
-          <Icon name="restaurant" size={20} color="#ccc" />
-        </View>
-        <Text style={styles.menuName}>마라탕</Text>
-      </View>
-      <View style={styles.menuItem}>
-        <View style={styles.menuImagePlaceholder}>
-          <Icon name="restaurant" size={20} color="#ccc" />
-        </View>
-        <Text style={styles.menuName}>마라샹궈</Text>
-      </View>
-      <View style={styles.menuItem}>
-        <View style={styles.menuImagePlaceholder}>
-          <Icon name="restaurant" size={20} color="#ccc" />
-        </View>
-        <Text style={styles.menuName}>꿔바로우</Text>
-      </View>
-    </ScrollView>
-  ), []);
+  const menuItems = useMemo(() => {
+    const menuData = [
+      { id: 1, name: '족발', image: require('../../../shared/images/menu1.png') },
+      { id: 2, name: '보쌈', image: require('../../../shared/images/menu2.png') },
+      { id: 3, name: '막국수', image: require('../../../shared/images/menu3.png') }
+    ];
 
-  // SNS 이미지들을 useMemo로 최적화
-  const snsImages = useMemo(() => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View style={styles.snsImagePlaceholder}>
-        <Icon name="camera-alt" size={20} color="#ccc" />
-      </View>
-      <View style={styles.snsImagePlaceholder}>
-        <Icon name="camera-alt" size={20} color="#ccc" />
-      </View>
-      <View style={styles.snsImagePlaceholder}>
-        <Icon name="camera-alt" size={20} color="#ccc" />
-      </View>
-    </ScrollView>
-  ), []);
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {menuData.map((menu) => (
+          <View key={menu.id} style={styles.menuItem}>
+            <View style={styles.menuImageContainer}>
+              <Image 
+                source={menu.image} 
+                style={styles.menuImage}
+                resizeMode="cover"
+              />
+            </View>
+            <Text style={styles.menuName}>{menu.name}</Text>
+          </View>
+        ))}
+      </ScrollView>
+    );
+  }, []);
+
+  // 리뷰 이미지들을 useMemo로 최적화
+  const reviewImages = useMemo(() => {
+    const imageUrls = storeDetail?.recentReviewImageUrls || [];
+    
+    if (!imageUrls || imageUrls.length === 0) {
+      return (
+        <View style={styles.mainImage}>
+          <View style={styles.imagePlaceholder}>
+            <Icon name="store" size={40} color="#ccc" />
+          </View>
+        </View>
+      );
+    }
+
+    // 첫 번째 이미지를 메인 이미지로, 나머지를 서브 이미지로 표시
+    const mainImage = imageUrls[0];
+    const subImages = imageUrls.slice(1, 5); // 최대 4개의 서브 이미지
+
+    return (
+      <>
+        <View style={styles.mainImage}>
+          <Image 
+            source={{ uri: mainImage }} 
+            style={styles.imagePlaceholder}
+            resizeMode="cover"
+          />
+        </View>
+        <View style={styles.subImages}>
+          {subImages.map((imageUrl, index) => (
+            <View key={index} style={styles.subImage}>
+              <Image 
+                source={{ uri: imageUrl }} 
+                style={styles.imagePlaceholder}
+                resizeMode="cover"
+              />
+            </View>
+          ))}
+          {/* 서브 이미지가 4개 미만인 경우 빈 공간 채우기 */}
+          {Array.from({ length: Math.max(0, 4 - subImages.length) }).map((_, index) => (
+            <View key={`empty-${index}`} style={styles.subImage}>
+              <View style={styles.imagePlaceholder}>
+                <Icon name="camera-alt" size={16} color="#ccc" />
+              </View>
+            </View>
+          ))}
+        </View>
+      </>
+    );
+  }, [storeDetail?.recentReviewImageUrls]);
+
+  // SNS 포스트들을 useMemo로 최적화
+  const snsPostsSection = useMemo(() => {
+    console.log('=== SNS 렌더링 상태 확인 ===');
+    console.log('snsLoading:', snsLoading);
+    console.log('snsError:', snsError);
+    console.log('snsPosts:', snsPosts);
+    console.log('snsPosts 길이:', snsPosts?.length);
+    
+    if (snsLoading) {
+      console.log('🔄 SNS 로딩 상태 렌더링');
+      return (
+        <View style={styles.snsContainer}>
+          <Text style={styles.loadingText}>SNS 포스트를 불러오는 중...</Text>
+        </View>
+      );
+    }
+
+    if (snsError) {
+      console.log('❌ SNS 에러 상태 렌더링');
+      console.log('에러 내용:', snsError);
+      return (
+        <View style={styles.snsContainer}>
+          <Text style={styles.emptyReviewText}>SNS 포스트를 불러올 수 없습니다.</Text>
+          <Text style={styles.emptyReviewText}>에러: {snsError.message}</Text>
+        </View>
+      );
+    }
+
+    if (!snsPosts || snsPosts.length === 0) {
+      console.log('📭 SNS 빈 데이터 상태 렌더링');
+      return (
+        <View style={styles.snsContainer}>
+          <Text style={styles.emptyReviewText}>작성된 SNS 포스트가 없습니다 🥺</Text>
+        </View>
+      );
+    }
+
+    console.log('✅ SNS 포스트 렌더링 시작');
+    console.log('렌더링할 포스트 개수:', snsPosts.length);
+    
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {snsPosts.map((post, index) => {
+          console.log(`포스트 ${index + 1} 렌더링:`, {
+            postId: post.postId,
+            userNickname: post.userNickname,
+            content: post.content?.substring(0, 50) + '...',
+            imagesCount: post.images?.length || 0
+          });
+          
+          return (
+            <View key={post.postId || index} style={styles.snsPost}>
+              <View style={styles.snsProfile}>
+                <View style={styles.profileIcon}>
+                  <Icon name="star" size={16} color="#FFD700" />
+                </View>
+                <Text style={styles.username}>{post.userNickname || '동네스타'}</Text>
+              </View>
+              <View style={styles.snsContent}>
+                <View style={styles.snsTextContainer}>
+                  <Text style={styles.snsText}>
+                    {post.content || '내용이 없습니다.'}
+                  </Text>
+                  <Text style={styles.snsDate}>
+                    {new Date().toLocaleDateString('ko-KR', {
+                      year: '2-digit',
+                      month: 'numeric',
+                      day: 'numeric',
+                      weekday: 'short'
+                    })}
+                  </Text>
+                </View>
+                <View style={styles.snsImageContainer}>
+                  {post.images && post.images.length > 0 ? (
+                    <Image 
+                      source={{ uri: post.images[0].imageUrl }} 
+                      style={styles.snsImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.snsImagePlaceholder}>
+                      <Icon name="landscape" size={24} color="#ccc" />
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
+    );
+  }, [snsPosts, snsLoading, snsError]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -330,28 +529,7 @@ const StoreDetail = React.memo(({ store, onBack }) => {
 
       {/* 매장 이미지 */}
       <View style={styles.imageContainer}>
-        <View style={styles.mainImage}>
-          <View style={styles.imagePlaceholder}>
-            <Icon name="store" size={40} color="#ccc" />
-          </View>
-        </View>
-        <View style={styles.subImages}>
-          <View style={styles.subImage}>
-            <View style={styles.imagePlaceholder}>
-              <Icon name="restaurant" size={20} color="#ccc" />
-            </View>
-          </View>
-          <View style={styles.subImage}>
-            <View style={styles.imagePlaceholder}>
-              <Icon name="local-dining" size={20} color="#ccc" />
-            </View>
-          </View>
-          <View style={styles.subImage}>
-            <View style={styles.imagePlaceholder}>
-              <Icon name="table-restaurant" size={20} color="#ccc" />
-            </View>
-          </View>
-        </View>
+        {reviewImages}
       </View>
 
       {/* 매장 정보 */}
@@ -400,30 +578,7 @@ const StoreDetail = React.memo(({ store, onBack }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>SNS</Text>
         <View style={styles.contentSpacing}>
-          <View style={styles.snsPost}>
-            <View style={styles.snsProfile}>
-              <View style={styles.profileIcon}>
-                <Icon name="star" size={16} color="#FFD700" />
-              </View>
-              <Text style={styles.username}>동네스타</Text>
-            </View>
-            <View style={styles.snsContent}>
-              <View style={styles.snsTextContainer}>
-                <Text style={styles.snsText}>
-                  가족단위 손님도 많고 혼밥하{'\n'}
-                  러 오시는 분들도 많은 곳입{'\n'}
-                  니다 잔치국수가 국물이 시원{'\n'}
-                  하고 정말 맛있어요. 여러분...
-                </Text>
-                <Text style={styles.snsDate}>25.8.17.목</Text>
-              </View>
-              <View style={styles.snsImageContainer}>
-                <View style={styles.snsImagePlaceholder}>
-                  <Icon name="landscape" size={24} color="#ccc" />
-                </View>
-              </View>
-            </View>
-          </View>
+          {snsPostsSection}
         </View>
       </View>
 
@@ -475,8 +630,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mainImage: {
-    flex: 2,
-    height: 200,
+    flex: 1,
+    aspectRatio: 1,
   },
   imagePlaceholder: {
     flex: 1,
@@ -487,10 +642,14 @@ const styles = StyleSheet.create({
   },
   subImages: {
     flex: 1,
-    gap: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    aspectRatio: 1,
   },
   subImage: {
-    flex: 1,
+    width: '48%',
+    aspectRatio: 1,
   },
   infoSection: {
     padding: 16,
@@ -559,6 +718,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+    menuImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  menuImage: {
+    width: '100%',
+    height: '100%',
+  },
   menuImagePlaceholder: {
     width: 80,
     height: 80,
@@ -625,6 +800,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
   },
+  snsImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
   snsImagePlaceholder: {
     width: 80,
     height: 80,
@@ -632,6 +812,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  snsContainer: {
+    minHeight: 120,
+    justifyContent: 'center',
   },
   reviewContainer: {
     minHeight: 120,

@@ -15,15 +15,15 @@ import OwnerInfoScreen from '../../features/profile/screens/OwnerInfoScreen';
 import OwnerFeedScreen from '../../features/sns/owner/screens/FeedScreen';
 
 // Owner 스크린들 import
+import StoreMainScreen from '../../features/store/screens/StoreMainScreen';
 import StoreManagementScreen from '../../features/store/screens/StoreManagementScreen';
 import StorePostingScreen from '../../features/store/screens/StorePostingScreen';
+import UserPatternScreen from '../../features/store/screens/UserPatternScreen';
 import PostDetailScreen from '../../features/sns/owner/screens/PostDetailScreen';
 
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
 
-// FCM 훅 import
-import { useFCM } from '../hooks/useFCM';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -32,7 +32,9 @@ const Stack = createStackNavigator();
 const StoreManagementStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StoreMain" component={StoreMainScreen} />
       <Stack.Screen name="StoreManagementMain" component={StoreManagementScreen} />
+      <Stack.Screen name="UserPattern" component={UserPatternScreen} />
       <Stack.Screen name="StorePosting" component={StorePostingScreen} />
     </Stack.Navigator>
   );
@@ -67,20 +69,20 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
   useAuthCheck();
   
   // FCM 토큰 초기화 (로그인 후에만 실행됨)
-  const { token: fcmToken, isLoading: fcmLoading } = useFCM();
+  // const { token: fcmToken, isLoading: fcmLoading } = useFCM();
 
   const getTabScreens = () => {
     if (userType === 'customer') {
       return [
         { name: 'Map', component: MapScreen, label: '지도' },
-        { name: 'Subscribe', component: CustomerSNSStack, label: 'SNS' },
+        { name: 'Subscribe', component: CustomerSNSStack, label: '봄내 소식' },
         { name: 'Recommend', component: RecommendScreen, label: '추천' },
         { name: 'Profile', component: CustomerInfoScreen, label: '내 정보' },
       ];
     } else {
       return [
         { name: 'Map', component: MapScreen, label: '지도' },
-        { name: 'Subscribe', component: OwnerSNSStack, label: 'SNS' },
+        { name: 'Subscribe', component: OwnerSNSStack, label: '봄내 소식' },
         { name: 'Management', component: StoreManagementStack, label: '점포관리' },
         { name: 'Profile', component: OwnerInfoScreen, label: '내 정보' },
       ];
@@ -91,7 +93,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
     // 공통 아이콘 정의
     const COMMON_ICONS = [
       { name: 'Map', label: '지도', icon: 'location-outline', activeIcon: 'location-sharp', type: 'Ionicons' },
-      { name: 'Subscribe', label: 'SNS', icon: 'chatbubble-outline', activeIcon: 'chatbubble', type: 'Ionicons' },
+      { name: 'Subscribe', label: '봄내 소식', icon: 'chatbubble-outline', activeIcon: 'chatbubble', type: 'Ionicons' },
       { name: 'Profile', label: '내 정보', icon: 'user-o', activeIcon: 'user', type: 'FontAwesome' },
     ];
 
@@ -157,7 +159,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
           component={screen.component}
           options={{
             tabBarLabel: screen.name === 'Map' ? '지도' : 
-                         screen.name === 'Subscribe' ? 'SNS' : 
+                         screen.name === 'Subscribe' ? '봄내 소식' : 
                          screen.name === 'Recommend' ? '추천' : 
                          screen.name === 'Management' ? '점포관리' :
                          screen.name === 'Posting' ? '게시' :

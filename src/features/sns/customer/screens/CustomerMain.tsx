@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,70 +7,88 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  TextInput
+  TextInput,
+  Image,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { getFollowedPosts, FollowPost } from '../services/FollowPostAPI';
 
 interface ReviewItemProps {
-  shopName: string;
-  reviewText: string;
-  date: string;
+  post: FollowPost;
+  onPress: () => void;
 }
 
-const ReviewItem = ({ shopName, reviewText, date }: ReviewItemProps) => (
-  <View style={styles.reviewItem}>
-    <View style={styles.reviewHeader}>
-      <View style={styles.starContainer}>
-        <Text style={styles.starIcon}>⭐</Text>
-        <Text style={styles.shopName}>{shopName}</Text>
+const ReviewItem = ({ post, onPress }: ReviewItemProps) => {
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    
+    return `${year}.${month}.${day}.${weekday}`;
+  };
+
+  return (
+    <TouchableOpacity style={styles.reviewItem} onPress={onPress}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.starContainer}>
+          <Text style={styles.starIcon}>⭐</Text>
+          <Text style={styles.shopName}>{post.storeName}</Text>
+        </View>
       </View>
-    </View>
-    <View style={styles.reviewContent}>
-      <View style={styles.reviewTextContainer}>
-        <Text style={styles.reviewText}>{reviewText}</Text>
-        <Text style={styles.reviewDate}>{date}</Text>
+      <View style={styles.reviewContent}>
+        <View style={styles.reviewTextContainer}>
+          <Text style={styles.reviewText}>{post.content}</Text>
+          <Text style={styles.reviewDate}>{formatDate(post.createdAt)}</Text>
+        </View>
+        {post.images && post.images.length > 0 ? (
+          <Image 
+            source={{ uri: post.images[0].imageUrl }} 
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.cameraIcon}>📷</Text>
+          </View>
+        )}
       </View>
-      <View style={styles.imagePlaceholder}>
-        <Text style={styles.cameraIcon}>📷</Text>
-      </View>
-    </View>
-  </View>
-);
+    </TouchableOpacity>
+  );
+};
 
 export default function FollowScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  const reviews = [
-    {
-      id: 1,
-      shopName: "가게1",
-      reviewText: "오늘도 정상영업합니다! 마카롱 많도 순두부찌개가 대표메뉴입니다 추천드립니다~ ...",
-      date: "25.8.17.목"
-    },
-    {
-      id: 2,
-      shopName: "가게2", 
-      reviewText: "8월 말까지 이벤트를 진행합니다! 50,000원 이상 구매 시 두루마리 휴지 무료 증정!",
-      date: "25.8.17.목"
-    },
-    {
-      id: 3,
-      shopName: "가게3",
-      reviewText: "다들 기다려주셔서 감사합니다! 여름 휴가를 마치고 재오픈 하였습니다!",
-      date: "25.8.17.목"
-    },
-    {
-      id: 4,
-      shopName: "가게4",
-      reviewText: "다들 기다려주셔서 감사합니다! 여름 휴가를 마치고 재오픈 하였습니다!",
-      date: "25.8.17.목"
+  const [followedPosts, setFollowedPosts] = useState<FollowPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 팔로우 게시글 데이터 로드
+  useEffect(() => {
+    loadFollowedPosts();
+  }, []);
+
+  const loadFollowedPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await getFollowedPosts(10);
+      setFollowedPosts(response.values);
+      console.log('팔로우 게시글 로드 완료:', response.values.length, '개');
+    } catch (error: any) {
+      console.error('팔로우 게시글 로드 실패:', error);
+      Alert.alert('오류', '팔로우 게시글을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   // 검색 기능 구현
   const handleSearch = async (text: string) => {
@@ -87,7 +105,7 @@ export default function FollowScreen() {
     try {
       // 실제 API 호출 대신 임시 데이터로 검색 시뮬레이션
       const mockStores = [
-        { id: 1, name: "가게1", storeId: 14, type: "restaurant" },
+        { id: 1, name: "5감족발", storeId: 1, type: "restaurant" },
         { id: 2, name: "가게2", storeId: 102, type: "cafe" },
         { id: 3, name: "가게3", storeId: 103, type: "restaurant" },
         { id: 4, name: "가게4", storeId: 104, type: "cafe" },
@@ -119,6 +137,29 @@ export default function FollowScreen() {
     // 검색창 초기화
     setSearchText('');
     setSearchResults([]);
+  };
+
+  const handlePostPress = (post: FollowPost) => {
+    // 게시글 상세 화면으로 이동
+    console.log('게시글 선택:', post.postId);
+    navigation.navigate('PostDetail', { 
+      post: {
+        postId: post.postId,
+        content: post.content,
+        storeId: post.storeId,
+        storeName: post.storeName,
+        userId: post.userId,
+        userNickname: post.userNickname,
+        uploderRole: post.uploderRole,
+        images: post.images,
+        hashtags: post.hashtags,
+        likeCount: post.likeCount,
+        commentCount: post.commentCount,
+        createdAt: post.createdAt,
+        liked: post.liked
+      },
+      type: 'post'
+    });
   };
 
   return (
@@ -167,14 +208,24 @@ export default function FollowScreen() {
         <Text style={styles.title}>팔로우</Text>
         
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {reviews.map((review) => (
-            <ReviewItem
-              key={review.id}
-              shopName={review.shopName}
-              reviewText={review.reviewText}
-              date={review.date}
-            />
-          ))}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>팔로우 게시글을 불러오는 중...</Text>
+            </View>
+          ) : followedPosts.length > 0 ? (
+            followedPosts.map((post) => (
+              <ReviewItem
+                key={post.postId}
+                post={post}
+                onPress={() => handlePostPress(post)}
+              />
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>팔로우한 매장의 게시글이 없습니다</Text>
+              <Text style={styles.emptySubText}>매장을 팔로우하고 최신 소식을 받아보세요!</Text>
+            </View>
+          )}
         </ScrollView>
       </View>
 
@@ -288,7 +339,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   title: {
-    fontSize: 30,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     paddingHorizontal: 20,
@@ -341,15 +392,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
   },
+  postImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
   imagePlaceholder: {
     width: 80,
     height: 80,
     backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 8,
   },
   cameraIcon: {
     fontSize: 24,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   fab: {
     position: 'absolute',

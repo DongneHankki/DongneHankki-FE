@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomNavigation from '../shared/components/BottomNavigation';
 import CustomerPostScreen from '../features/sns/customer/screens/CustomerPostScreen';
+import PostDetailScreen from '../shared/components/PostDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -15,6 +16,7 @@ const CustomerNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CustomerMain" component={CustomerMainScreen} />
       <Stack.Screen name="CustomerPost" component={CustomerPostScreen} />
+      <Stack.Screen name="PostDetail" component={PostDetailScreen} />
     </Stack.Navigator>
   );
 };

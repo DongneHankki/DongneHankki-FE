@@ -68,7 +68,7 @@ const MapScreen: React.FC = () => {
   const { loading, error, refetch } = useMapList(
     location ? location.latitude : null,
     location ? location.longitude : null,
-    5, // zoomLevel
+    4, // zoomLevel
     searchKeyword, // 검색어
     currentFilters // 필터
   );
