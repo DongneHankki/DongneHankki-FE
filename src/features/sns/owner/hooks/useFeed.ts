@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getTokenFromLocal } from '../../../../shared/utils/tokenUtil';
-import { Post, Review, Profile, Recommendation, StorePost } from '../types/feedTypes';
+import { Review, Profile, Recommendation, StorePost } from '../types/feedTypes';
 import {
-  getPosts,
   getReviews,
   getProfile,
-  getStorePosts,
   getStoreOwnerPosts,
   getStoreCustomerPosts,
   getReviewsByStoreId,
@@ -23,7 +21,7 @@ export const useFeed = (initialStoreId?: number) => {
   const [storeId, setStoreId] = useState<number | null>(initialStoreId || null);
 
   const [selectedTab, setSelectedTab] = useState<'posts' | 'reviews'>('posts');
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<StorePost[]>([]);
   const [storePosts, setStorePosts] = useState<StorePost[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -109,7 +107,7 @@ export const useFeed = (initialStoreId?: number) => {
         console.log('useFeed - storeId로 직접 데이터 로드:', storeId);
         
         const [postsData, reviewsData, profileDataResult] = await Promise.all([
-          getPosts(),
+          getStoreOwnerPosts(storeId),
           getReviewsByStoreId(storeId),
           getProfileByStoreId(storeId)
         ]);
@@ -119,7 +117,7 @@ export const useFeed = (initialStoreId?: number) => {
         console.log('useFeed - reviews:', reviewsData);
         console.log('useFeed - profile:', profileDataResult);
 
-        setPosts(postsData);
+        setPosts(postsData.values as StorePost[]);
         setReviews(reviewsData);
         setProfile(profileDataResult);
         profileData = profileDataResult;
@@ -129,18 +127,15 @@ export const useFeed = (initialStoreId?: number) => {
         console.log('useFeed - 변환된 userId:', numericUserId);
 
         console.log('useFeed - API 호출 시작');
-        const [postsData, reviewsData, profileDataResult] = await Promise.all([
-          getPosts(),
+        const [reviewsData, profileDataResult] = await Promise.all([
           getReviews(numericUserId),
           getProfile(numericUserId)
         ]);
 
         console.log('=== API 호출 완료 ===');
-        console.log('useFeed - posts:', postsData);
         console.log('useFeed - reviews:', reviewsData);
         console.log('useFeed - profile:', profileDataResult);
 
-        setPosts(postsData);
         setReviews(reviewsData);
         setProfile(profileDataResult);
         profileData = profileDataResult;
@@ -163,12 +158,15 @@ export const useFeed = (initialStoreId?: number) => {
         // 손님 게시글을 reviews에 변환하여 설정 (리뷰 탭에 표시)
         const customerPostsAsReviews = customerPostsData.values.map((post, index) => ({
           id: post.postId,
+          postId: post.postId, // 댓글 수 조회를 위해 추가
           rating: 5, // 기본값
           content: post.content,
           userName: post.userNickname,
           createdAt: post.createdAt,
           images: post.images, // 이미지 정보 추가
           hashtags: post.hashtags, // 해시태그 정보 추가
+          likeCount: post.likeCount || 0, // 좋아요 수 추가
+          userId: post.userId, // 사용자 ID 추가
         }));
         setReviews(customerPostsAsReviews);
         
@@ -182,6 +180,7 @@ export const useFeed = (initialStoreId?: number) => {
         console.log('useFeed - ownerPosts:', ownerPostsData);
         console.log('useFeed - customerPosts:', customerPostsData);
         console.log('useFeed - updatedProfile:', updatedProfile);
+
       }
 
       // 임시 추천 데이터
@@ -231,6 +230,7 @@ export const useFeed = (initialStoreId?: number) => {
     }
   };
 
+
   return {
     selectedTab,
     posts,
@@ -242,7 +242,6 @@ export const useFeed = (initialStoreId?: number) => {
     error,
     handleTabChange,
     handleWritePost,
-    handleEditProfile,
     handleHideRecommendation,
     handleRefresh,
   };

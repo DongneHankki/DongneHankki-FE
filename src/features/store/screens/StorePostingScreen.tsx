@@ -12,19 +12,22 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { createOwnerPost } from '../services/storeApi';
-import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 interface StorePostingScreenProps {
   postingParams?: {
     image: string;
     content: string;
+    storeId?: number;
   };
 }
 
-const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }) => {
+const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const postingParams = route.params as any;
+  
   const [isEditing, setIsEditing] = useState(false);
   const [marketingContent, setMarketingContent] = useState(postingParams?.content || "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
   const [isUploading, setIsUploading] = useState(false);
@@ -52,24 +55,52 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = ({ postingParams }
       return;
     }
 
+    if (!postingParams?.image) {
+      Alert.alert('알림', '이미지를 선택해주세요.');
+      return;
+    }
+
     setIsUploading(true);
     try {
-      // 실제 API 호출을 여기에 구현
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 모의 지연
-      Alert.alert('성공', 'AI 마케팅이 업로드되었습니다!');
+      const hashtagRegex = /#[\w가-힣]+/g;
+      const extractedHashtags = marketingContent.match(hashtagRegex) || [];
+      
+      // TODO 해시태그
+      const hashtags = extractedHashtags.length > 0 
+        ? extractedHashtags 
+        : ['#마케팅', '#가게홍보'];
+
+      // 전 화면에서 받아온 storeId 사용 (없으면 기본값 1)
+      const storeId = postingParams?.storeId || 1;
+      console.log('StorePostingScreen - postingParams:', postingParams);
+      console.log('StorePostingScreen - storeId:', storeId);
+
+      const postData = {
+        storeId: storeId, 
+        content: marketingContent.trim(),
+        images: [postingParams.image],
+        hashtags: hashtags
+      };
+
+      console.log('게시글 작성 데이터:', postData);
+
+      // API 호출
+      await createOwnerPost(postData);
+      
+      Alert.alert('성공', '게시글이 성공적으로 작성되었습니다!');
+      
       // 업로드 성공 후 StoreManagementScreen으로 돌아가기
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('오류', error.message || '업로드에 실패했습니다.');
+      console.error('게시글 작성 에러:', error);
+      Alert.alert('오류', error.message || '게시글 작성에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* 뒤로 가기 버튼 */}
-      
+    <SafeAreaView style={styles.container}>      
       {/* 로딩 오버레이 */}
       {(isUploading) && (
         <View style={styles.loadingOverlay}>

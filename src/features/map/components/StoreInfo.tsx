@@ -204,7 +204,7 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
             styles.subscribeText,
             isFollowing ? styles.followingText : styles.notFollowingText
           ]}>
-            {isLoading ? '처리중...' : (isFollowing ? '팔로우' : '팔로우')}
+            {isLoading ? '처리중...' : (isFollowing ? '팔로잉' : '팔로우')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -269,18 +269,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   followingButton: {
-    backgroundColor: '#FBA542', // 주황색 배경
-  },
-  notFollowingButton: {
     backgroundColor: '#FFFFFF', // 흰색 배경
     borderWidth: 1,
-    borderColor: '#FBA542',
+    borderColor: '#FBA542', // 주황색 테두리
+  },
+  notFollowingButton: {
+    backgroundColor: '#FBA542', // 주황색 배경
   },
   followingText: {
-    color: '#2E1404', // 갈색 글씨
+    color: '#FBA542', // 주황색 글씨
   },
   notFollowingText: {
-    color: '#FBA542', // 주황색 글씨
+    color: '#2E1404', // 갈색 글씨
   },
 });
 
