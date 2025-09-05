@@ -351,8 +351,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
+    paddingVertical: 50,
   },
   restaurantNameContainer: {
     flexDirection: 'row',

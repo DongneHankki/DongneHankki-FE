@@ -15,16 +15,17 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { common } from '../../../shared/styles/commonAuthStyles';
 import { useImagePicker } from '../hooks/useImagePicker';
-import { generateAIMarketingContent, uploadMarketingPost, getUserInfo } from '../services/storeApi';
+import { generateAIMarketingContent, uploadMarketingPost, getStoreIdByUserId } from '../services/storeApi';
 import { MarketingPost } from '../types/storeTypes';
 import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
+import { getUserIdFromToken } from '../../../shared/utils/jwtUtil';
 
 const StoreManagementScreen: React.FC = () => {
   const navigation = useNavigation();
   const [basicContent, setBasicContent] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
+  const [hashtags, setHashtags] = useState<string[]>([]);
   const { selectedImage, isImageUploading, handleImageUpload, removeImage } = useImagePicker();
 
   const handleAIGeneration = async () => {
@@ -35,10 +36,32 @@ const StoreManagementScreen: React.FC = () => {
 
     setIsGeneratingAI(true);
     try {
+      // 토큰에서 storeId 가져오기
+      const tokens = await getTokenFromLocal();
+      if (!tokens?.accessToken) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        return;
+      }
+      
+      const userId = getUserIdFromToken(tokens.accessToken);
+      if (!userId) {
+        Alert.alert('오류', '유저 정보를 찾을 수 없습니다.');
+        return;
+      }
+      
+      const storeId = await getStoreIdByUserId(parseInt(userId, 10));
+      if (!storeId) {
+        Alert.alert('오류', '스토어 정보를 찾을 수 없습니다.');
+        return;
+      }
+
       // basicContent의 현재 값을 키워드로 사용
       const keywords = basicContent.trim() || '커피';
-      const aiContent = await generateAIMarketingContent(selectedImage, keywords);
-      setBasicContent(aiContent);
+      const aiContent = await generateAIMarketingContent(selectedImage, keywords, storeId);
+      console.log('AI 생성 결과:', aiContent);
+      setBasicContent(aiContent.content);
+      setHashtags(aiContent.tag || []);
+      console.log('설정된 hashtags:', aiContent.tag);
       Alert.alert('성공', 'AI 마케팅 글이 생성되었습니다!');
     } catch (error: any) {
       Alert.alert('오류', error.message);
@@ -59,10 +82,20 @@ const StoreManagementScreen: React.FC = () => {
 
     setIsUploading(true);
     try {
-      // keychain에서 storeId 가져오기
-      const tokenData = await getTokenFromLocal();
-      const userInfo = await getUserInfo(tokenData?.userId || '1');
-      const storeId = userInfo?.storeId || 1;
+      // 토큰에서 storeId 가져오기
+      const tokens = await getTokenFromLocal();
+      if (!tokens?.accessToken) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        return;
+      }
+      
+      const userId = getUserIdFromToken(tokens.accessToken);
+      if (!userId) {
+        Alert.alert('오류', '유저 정보를 찾을 수 없습니다.');
+        return;
+      }
+      
+      const storeId = await getStoreIdByUserId(parseInt(userId, 10));
 
       const postData: MarketingPost = {
         image: selectedImage,
@@ -72,10 +105,19 @@ const StoreManagementScreen: React.FC = () => {
       await uploadMarketingPost(postData);
 
       // 성공 후 다음 페이지로 이동 (이미지와 내용 전달)
+      console.log('StoreManagementScreen - 현재 hashtags 상태:', hashtags);
+      console.log('StoreManagementScreen - navigate 데이터:', {
+        image: selectedImage,
+        content: basicContent.trim(),
+        hashtags: hashtags,
+        storeId: storeId || 0,
+      });
+      
       (navigation as any).navigate('StorePosting', {
         image: selectedImage,
         content: basicContent.trim(),
-        storeId: storeId,
+        hashtags: hashtags,
+        storeId: storeId || 0,
       });
     } catch (error: any) {
       Alert.alert('오류', error.message);
