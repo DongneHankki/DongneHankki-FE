@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { checkFollowStatus, followStore, unfollowStore } from '../services/followAPI';
 
 interface StoreInfoProps {
   storeName: string;
@@ -9,6 +10,7 @@ interface StoreInfoProps {
   rating: number;
   onSubscribe: () => void;
   industryCode?: number;
+  storeId: number;
 }
 
 const StoreInfo: React.FC<StoreInfoProps> = ({
@@ -18,18 +20,120 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
   rating,
   onSubscribe,
   industryCode,
+  storeId,
 }) => {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 별점 렌더링
-  const stars = Array.from({ length: 5 }, (_, index) => (
-    <Icon
-      key={index}
-      name="star"
-      size={16}
-      color={index < rating ? '#FBA542' : '#E0E0E0'}
-      style={styles.star}
-    />
-  ));
+  // 팔로우 상태 확인
+  useEffect(() => {
+    loadFollowStatus();
+  }, [storeId]);
+
+  // 팔로우 상태 확인 API
+  const loadFollowStatus = async () => {
+    try {
+      const isFollowingStatus = await checkFollowStatus(storeId);
+      setIsFollowing(isFollowingStatus);
+    } catch (error) {
+      console.error('팔로우 상태 확인 실패:', error);
+    }
+  };
+
+  // 팔로우/언팔로우 API
+  const toggleFollow = async () => {
+    if (isLoading) return;
+    
+    // 언팔로우 시 확인 다이얼로그
+    if (isFollowing) {
+      Alert.alert(
+        '언팔로우',
+        '정말 언팔로우 하시겠습니까?',
+        [
+          {
+            text: '취소',
+            style: 'cancel',
+          },
+          {
+            text: '예',
+            style: 'destructive',
+            onPress: () => performFollowAction('unfollow'),
+          },
+        ]
+      );
+    } else {
+      // 팔로우 시 바로 실행
+      performFollowAction('follow');
+    }
+  };
+
+  // 실제 팔로우/언팔로우 API 호출
+  const performFollowAction = async (action: 'follow' | 'unfollow') => {
+    setIsLoading(true);
+    try {
+      if (action === 'follow') {
+        // 팔로우 요청
+        await followStore(storeId);
+      } else {
+        // 언팔로우 요청
+        await unfollowStore(storeId);
+      }
+      
+      setIsFollowing(action === 'follow');
+      onSubscribe(); // 기존 콜백 호출
+      
+      Alert.alert(
+        action === 'follow' ? '팔로우' : '언팔로우',
+        action === 'follow' ? '팔로우했습니다!' : '팔로우를 취소했습니다.'
+      );
+    } catch (error: any) {
+      console.error('팔로우 처리 실패:', error);
+      Alert.alert('오류', error.message || '팔로우 처리에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 별점 렌더링 (부분 채움 지원)
+  const stars = Array.from({ length: 5 }, (_, index) => {
+    const starIndex = index + 1;
+    const fillPercentage = Math.max(0, Math.min(1, rating - index));
+    
+    if (fillPercentage >= 1) {
+      // 완전히 채워진 별
+      return (
+        <Icon
+          key={index}
+          name="star"
+          size={16}
+          color="#FF9500"
+          style={styles.star}
+        />
+      );
+    } else if (fillPercentage > 0) {
+      // 부분적으로 채워진 별 (star-half 사용)
+      return (
+        <Icon
+          key={index}
+          name="star-half"
+          size={16}
+          color="#FF9500"
+          style={styles.star}
+        />
+      );
+    } else {
+      // 빈 별
+      return (
+        <Icon
+          key={index}
+          name="star-border"
+          size={16}
+          color="#E0E0E0"
+          style={styles.star}
+        />
+      );
+    }
+  });
 
   // 업종 아이콘
   let industryIcon = 'restaurant';
@@ -87,9 +191,21 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
           {stars}
         </View>
 
-        {/* 구독 버튼 */}
-        <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
-          <Text style={styles.subscribeText}>팔로우</Text>
+        {/* 팔로우 버튼 */}
+        <TouchableOpacity 
+          style={[
+            styles.subscribeButton, 
+            isFollowing ? styles.followingButton : styles.notFollowingButton
+          ]} 
+          onPress={toggleFollow}
+          disabled={isLoading}
+        >
+          <Text style={[
+            styles.subscribeText,
+            isFollowing ? styles.followingText : styles.notFollowingText
+          ]}>
+            {isLoading ? '처리중...' : (isFollowing ? '팔로우' : '팔로우')}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -151,6 +267,20 @@ const styles = StyleSheet.create({
     color: '#2E1404',
     fontSize: 14,
     fontWeight: '600',
+  },
+  followingButton: {
+    backgroundColor: '#FBA542', // 주황색 배경
+  },
+  notFollowingButton: {
+    backgroundColor: '#FFFFFF', // 흰색 배경
+    borderWidth: 1,
+    borderColor: '#FBA542',
+  },
+  followingText: {
+    color: '#2E1404', // 갈색 글씨
+  },
+  notFollowingText: {
+    color: '#FBA542', // 주황색 글씨
   },
 });
 

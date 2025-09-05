@@ -11,12 +11,12 @@ const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<string>('Auth');
-  const { isAuthenticated, role } = useAuthStore();
+  const { isAuthenticated, role, isOwner } = useAuthStore();
 
   useEffect(() => {
     // 인증 상태에 따라 초기 라우트 설정
     if (isAuthenticated) {
-      if (role === 'owner') {
+      if (isOwner()) {
         setInitialRoute('Owner');
       } else {
         setInitialRoute('Customer');
@@ -24,7 +24,7 @@ const AppNavigator = () => {
     } else {
       setInitialRoute('Auth');
     }
-  }, [isAuthenticated, role]);
+  }, [isAuthenticated, isOwner]);
 
   return (
     <NavigationContainer>

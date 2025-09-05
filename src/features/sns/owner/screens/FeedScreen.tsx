@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -14,15 +14,27 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useFeed } from '../hooks/useFeed';
-import { addPostLike, removePostLike } from '../services/feedApi';
 
 const { width } = Dimensions.get('window');
-const imageSize = (width - 60) / 3;
+const imageSize = (width - 60) / 3; // 3열 그리드, 좌우 패딩 20씩
 const reviewImageWidth = imageSize;
-const reviewImageHeight = (imageSize * 3) / 2;
+const reviewImageHeight = (imageSize * 3) / 2; // 2:3 비율
 
-const FeedScreen = () => {
+interface FeedScreenProps {
+  route?: {
+    params?: {
+      storeId?: number;
+      storeName?: string;
+      userType?: 'owner' | 'customer';
+    };
+  };
+}
+
+const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
   const navigation = useNavigation();
+  const routeParams = route?.params || {};
+  const { storeId, storeName, userType } = routeParams;
+  
   const {
     selectedTab,
     storePosts,
@@ -35,11 +47,7 @@ const FeedScreen = () => {
     handleWritePost,
     handleHideRecommendation,
     handleRefresh,
-  } = useFeed();
-
-  // 좋아요 관련 상태
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
-  const [isLiking, setIsLiking] = useState(false);
+  } = useFeed(storeId);
 
   const handlePostPress = (post: any) => {
     // 게시글 상세 화면으로 이동
@@ -51,36 +59,15 @@ const FeedScreen = () => {
     (navigation as any).navigate('PostDetail', { review, type: 'review' });
   };
 
-  // 게시물 좋아요 토글
-  const handlePostLikeToggle = async (post: any) => {
-    if (isLiking) return;
-    
-    setIsLiking(true);
-    try {
-      const isCurrentlyLiked = likedPosts.has(post.postId) || post.liked;
-      
-      if (isCurrentlyLiked) {
-        await removePostLike(post.postId);
-        setLikedPosts(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(post.postId);
-          return newSet;
-        });
-      } else {
-        await addPostLike(post.postId);
-        setLikedPosts(prev => new Set(prev).add(post.postId));
-      }
-    } catch (error: any) {
-      Alert.alert('오류', error.message || '좋아요 처리에 실패했습니다.');
-    } finally {
-      setIsLiking(false);
-    }
+  const handleEditProfile = () => {
+    // 프로필 편집 화면으로 이동
+    (navigation as any).navigate('ProfileEdit');
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FBA542" />
+        <ActivityIndicator size="large" color="#FF6B35" />
         <Text style={styles.loadingText}>데이터 로딩 중...</Text>
       </View>
     );
@@ -109,6 +96,17 @@ const FeedScreen = () => {
     <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
+        {userType === 'customer' ? (
+          // Customer가 접근했을 때: 뒤로가기 버튼과 가게 이름
+          <View style={styles.customerHeader}>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('CustomerFeed')} style={styles.backButton}>
+              <Icon name="arrow-left" size={24} color="#2E1404" />
+            </TouchableOpacity>
+            <Text style={styles.customerHeaderTitle}>{storeName || '가게 정보'}</Text>
+            <View style={styles.placeholder} />
+          </View>
+        ) : (<></>
+        )}
       </View>
 
       <ScrollView 
@@ -123,23 +121,49 @@ const FeedScreen = () => {
             source={profile.image || require('../../../../shared/images/profile.png')} 
             style={styles.profileImage}
           />
-          <View style={styles.restaurantNameContainer}>
-            <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
-            <Icon style={styles.restaurantNameIcon} name="silverware-fork-knife" size={23} color="#000" />
-          </View>
+          <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
+          <Icon name="silverware-fork-knife" size={16} color="#666" />
           <Text style={styles.address}>{profile.address}</Text>
           
           {/* 별점 */}
           <View style={styles.ratingContainer}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Icon 
-                key={star} 
-                name="star" 
-                size={20} 
-                color={star <= Math.floor(profile.rating) ? "#FFD700" : "#ccc"} 
-              />
-            ))}
-            <Text style={styles.ratingText}>{profile.rating}</Text>
+            {[1, 2, 3, 4, 5].map((star) => {
+              const starIndex = star;
+              const fillPercentage = Math.max(0, Math.min(1, profile.rating - (starIndex - 1)));
+              
+              if (fillPercentage >= 1) {
+                // 완전히 채워진 별
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star" 
+                    size={20} 
+                    color="#FFD700" 
+                  />
+                );
+              } else if (fillPercentage > 0) {
+                // 부분적으로 채워진 별 (star-half 사용)
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star-half" 
+                    size={20} 
+                    color="#FFD700" 
+                  />
+                );
+              } else {
+                // 빈 별
+                return (
+                  <Icon 
+                    key={star} 
+                    name="star-border" 
+                    size={20} 
+                    color="#ccc" 
+                  />
+                );
+              }
+            })}
+            <Text style={styles.ratingText}>{profile.rating.toFixed(1)}</Text>
           </View>
           
           <Text style={styles.reviewCount}>리뷰 {profile.reviewCount}개</Text>
@@ -161,8 +185,8 @@ const FeedScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 오늘의 게시물 추천 */}
-        {selectedTab === 'posts' && recommendation?.show && (
+        {/* 오늘의 게시물 추천 - Owner만 표시 */}
+        {userType !== 'customer' && selectedTab === 'posts' && recommendation?.show && (
           <View style={styles.recommendationBox}>
             <TouchableOpacity onPress={handleHideRecommendation} style={styles.closeButton}>
               <Icon name="close" size={20} color="#666" />
@@ -217,25 +241,12 @@ const FeedScreen = () => {
                         <View style={styles.postActions}>
                           <View style={styles.actionItem}>
                             <Icon name="comment-outline" size={16} color="#666" />
-                            <Text style={styles.actionText}>{post.commentCount || 0}</Text>
+                            <Text style={styles.actionText}>10</Text>
                           </View>
-                          <TouchableOpacity 
-                            style={styles.actionItem} 
-                            onPress={() => handlePostLikeToggle(post)}
-                            disabled={isLiking}
-                          >
-                            <Icon 
-                              name={(likedPosts.has(post.postId) || post.liked) ? "thumb-up" : "thumb-up-outline"} 
-                              size={16} 
-                              color={(likedPosts.has(post.postId) || post.liked) ? "#FBA542" : "#666"} 
-                            />
-                            <Text style={[
-                              styles.actionText, 
-                              (likedPosts.has(post.postId) || post.liked) && styles.likedText
-                            ]}>
-                              {post.likeCount || 0}
-                            </Text>
-                          </TouchableOpacity>
+                          <View style={styles.actionItem}>
+                            <Icon name="thumb-up-outline" size={16} color="#666" />
+                            <Text style={styles.actionText}>{post.likeCount}</Text>
+                          </View>
                         </View>
                       </View>
                     </View>
@@ -319,7 +330,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#FBA542',
+    backgroundColor: '#FF6B35',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -334,12 +345,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
+    paddingVertical: 15,
     backgroundColor: '#fff',
   },
   editButton: {
     padding: 8,
+  },
+  customerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    zIndex: 1000,
+  },
+  customerHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E1404',
+    flex: 1,
+    textAlign: 'center',
+  },
+  placeholder: {
+    width: 40,
   },
   profileCard: {
     alignItems: 'center',
@@ -351,15 +384,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
-  },
-  restaurantNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  restaurantNameIcon: {
-    marginLeft: 5,
-    marginBottom: 3,
   },
   restaurantName: {
     fontSize: 24,
@@ -401,7 +425,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#FBA542',
+    borderBottomColor: '#FF6B35',
   },
   tabText: {
     fontSize: 16,
@@ -466,7 +490,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: 80,
-    height: 120,
+    height: 80,
     borderRadius: 8,
     marginRight: 12,
   },
@@ -501,11 +525,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginLeft: 4,
-  },
-  // 좋아요 스타일
-  likedText: {
-    color: '#FBA542',
-    fontWeight: '600',
   },
   reviewsContainer: {
     paddingHorizontal: 20,

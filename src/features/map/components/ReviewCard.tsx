@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -6,6 +6,7 @@ import { Review, deleteReview } from '../services/reviewAPI';
 import { useAuthStore } from '../../../shared/store/authStore';
 import { useMarketStore } from '../store/marketStore';
 import { formatTimeDiff } from '../utils/TimeDiff';
+import { getUserProfile } from '../../profile/services/userAPI';
 
 interface ReviewCardProps {
   review: Review;
@@ -25,8 +26,33 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
   console.log('ReviewCard 받은 데이터:', JSON.stringify(review, null, 2));
   
   const { id, reviewId, nickname, content, scope, createdAt, userImage } = review;
-  const { userId: currentUserId } = useAuthStore();
+  const { userId: currentUserId, profileImageUrl: currentUserProfileImage } = useAuthStore();
   const { storeDetail } = useMarketStore();
+  const [reviewerProfileImage, setReviewerProfileImage] = useState<string | null>(null);
+  
+  // 리뷰 작성자의 프로필 이미지 가져오기
+  useEffect(() => {
+    const loadReviewerProfile = async () => {
+      if (review.userId) {
+        try {
+          // 현재 사용자가 작성한 리뷰인 경우 현재 사용자의 프로필 이미지 사용
+          if (review.userId === parseInt(currentUserId || '0')) {
+            setReviewerProfileImage(currentUserProfileImage);
+          } else {
+            // 다른 사용자가 작성한 리뷰인 경우 해당 사용자의 프로필 정보 가져오기
+            const userProfile = await getUserProfile(review.userId.toString());
+            setReviewerProfileImage(userProfile.profileImageUrl);
+          }
+        } catch (error) {
+          console.error('리뷰 작성자 프로필 이미지 로딩 실패:', error);
+          // 에러 시 기본 이미지 사용
+          setReviewerProfileImage(null);
+        }
+      }
+    };
+
+    loadReviewerProfile();
+  }, [review.userId, currentUserId, currentUserProfileImage]);
   
   // reviewId 또는 id 중 존재하는 것을 사용
   const actualReviewId = reviewId || id;
@@ -47,7 +73,19 @@ const ReviewCard: React.FC<ReviewCardProps> = React.memo(({
   
   // 날짜 포맷팅
   const reviewDate = formatTimeDiff(createdAt);
-  const reviewerImage = userImage ? { uri: userImage } : require('../../../shared/images/profile.png');
+  
+  let reviewerImage;
+  if (reviewerProfileImage) {
+    reviewerImage = { uri: reviewerProfileImage };
+  } else {
+    try {
+      reviewerImage = require('../../../shared/images/profile.png');
+    } catch (error) {
+      console.error('기본 이미지 로드 실패:', error);
+      reviewerImage = null;
+    }
+  }
+  
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   

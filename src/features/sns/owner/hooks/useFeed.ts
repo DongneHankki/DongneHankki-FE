@@ -7,18 +7,21 @@ import {
   getReviews,
   getProfile,
   getStoreOwnerPosts,
-  getStoreCustomerPosts
+  getStoreCustomerPosts,
+  getReviewsByStoreId,
+  getProfileByStoreId
 } from '../services/feedApi';
 
-export const useFeed = () => {
+export const useFeed = (initialStoreId?: number) => {
   const navigation = useNavigation();
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<'owner' | 'customer' | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [storeId, setStoreId] = useState<number | null>(null);
+  const [storeId, setStoreId] = useState<number | null>(initialStoreId || null);
 
   const [selectedTab, setSelectedTab] = useState<'posts' | 'reviews'>('posts');
+  const [posts, setPosts] = useState<StorePost[]>([]);
   const [storePosts, setStorePosts] = useState<StorePost[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -58,8 +61,28 @@ export const useFeed = () => {
     });
   }, [userId, role, isAuthenticated, accessToken]);
 
+  // 더 자세한 로깅 추가
   useEffect(() => {
-    if (userId && isAuthenticated && accessToken) {
+    console.log('useFeed - 상세 상태:', {
+      userId,
+      role,
+      isAuthenticated,
+      accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : null,
+      loading,
+      error,
+      hasProfile: !!profile,
+      hasPosts: !!posts?.length,
+      hasStorePosts: !!storePosts?.length,
+      hasReviews: !!reviews?.length
+    });
+  }, [userId, role, isAuthenticated, accessToken, loading, error, profile, posts, storePosts, reviews]);
+
+  useEffect(() => {
+    // storeId가 직접 제공된 경우 (Customer가 특정 가게를 볼 때)
+    if (storeId) {
+      console.log('useFeed - ✅ storeId로 직접 데이터 로드 시작:', storeId);
+      loadData();
+    } else if (userId && isAuthenticated && accessToken) {
       console.log('useFeed - ✅ 모든 조건 만족: 데이터 로드 시작, userId:', userId);
       loadData();
     } else if (!isAuthenticated) {
@@ -67,9 +90,9 @@ export const useFeed = () => {
       setLoading(false);
       setError('인증되지 않은 사용자입니다.');
     } else {
-      console.log('useFeed - ⏳ 조건 대기 중...', { userId, isAuthenticated, accessToken });
+      console.log('useFeed - ⏳ 조건 대기 중...', { userId, isAuthenticated, accessToken, storeId });
     }
-  }, [userId, isAuthenticated, accessToken]);
+  }, [userId, isAuthenticated, accessToken, storeId]);
 
   const loadData = async () => {
     try {
@@ -77,30 +100,56 @@ export const useFeed = () => {
       setLoading(true);
       setError(null);
 
-      const numericUserId = parseInt(userId || '0');
-      console.log('useFeed - 변환된 userId:', numericUserId);
+      let profileData: any = null;
 
-      console.log('useFeed - API 호출 시작');
-      const [reviewsData, profileData] = await Promise.all([
-        getReviews(numericUserId),
-        getProfile(numericUserId)
-      ]);
+      // storeId가 직접 제공된 경우 (Customer가 특정 가게를 볼 때)
+      if (storeId) {
+        console.log('useFeed - storeId로 직접 데이터 로드:', storeId);
+        
+        const [postsData, reviewsData, profileDataResult] = await Promise.all([
+          getStoreOwnerPosts(storeId),
+          getReviewsByStoreId(storeId),
+          getProfileByStoreId(storeId)
+        ]);
 
-      console.log('=== API 호출 완료 ===');
-      console.log('useFeed - reviews:', reviewsData);
-      console.log('useFeed - profile:', profileData);
+        console.log('=== storeId로 API 호출 완료 ===');
+        console.log('useFeed - posts:', postsData);
+        console.log('useFeed - reviews:', reviewsData);
+        console.log('useFeed - profile:', profileDataResult);
 
-      setReviews(reviewsData);
-      setProfile(profileData);
+        setPosts(postsData.values as StorePost[]);
+        setReviews(reviewsData);
+        setProfile(profileDataResult);
+        profileData = profileDataResult;
+      } else {
+        // 기존 방식: userId로 storeId를 가져와서 데이터 로드
+        const numericUserId = parseInt(userId || '0');
+        console.log('useFeed - 변환된 userId:', numericUserId);
+
+        console.log('useFeed - API 호출 시작');
+        const [reviewsData, profileDataResult] = await Promise.all([
+          getReviews(numericUserId),
+          getProfile(numericUserId)
+        ]);
+
+        console.log('=== API 호출 완료 ===');
+        console.log('useFeed - reviews:', reviewsData);
+        console.log('useFeed - profile:', profileDataResult);
+
+        setReviews(reviewsData);
+        setProfile(profileDataResult);
+        profileData = profileDataResult;
+      }
 
       // storeId가 있으면 가게별 게시글도 로드
       if (profileData && profileData.storeId) {
-        setStoreId(profileData.storeId);
+        const currentStoreId = profileData.storeId;
+        setStoreId(currentStoreId);
         
         // 사장님 게시글과 손님 게시글 모두 로드
         const [ownerPostsData, customerPostsData] = await Promise.all([
-          getStoreOwnerPosts(profileData.storeId),
-          getStoreCustomerPosts(profileData.storeId)
+          getStoreOwnerPosts(currentStoreId),
+          getStoreCustomerPosts(currentStoreId)
         ]);
         
         // 사장님 게시글을 storePosts에 설정 (글 탭에 표시)
@@ -157,7 +206,13 @@ export const useFeed = () => {
   };
 
   const handleWritePost = () => {
-    navigation.navigate('Management' as never);
+    // BottomNavigation에서 정의된 탭 이름과 일치하도록 수정
+    // Management 탭으로 이동한 후 StorePosting 화면으로 이동
+    (navigation as any).navigate('Management', { screen: 'StorePosting' });
+  };
+
+  const handleEditProfile = () => {
+    Alert.alert('프로필 편집', '프로필 편집 기능은 준비 중입니다.');
   };
 
   const handleHideRecommendation = async () => {
@@ -178,6 +233,7 @@ export const useFeed = () => {
 
   return {
     selectedTab,
+    posts,
     storePosts,
     reviews,
     profile,

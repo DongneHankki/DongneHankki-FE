@@ -1,6 +1,97 @@
 import api from '../../../../shared/services/api';
 import { Post, Review, Profile, Recommendation, StorePost, StorePostsResponse, StoreOwnerPostsResponse, StoreCustomerPostsResponse, Comment } from '../types/feedTypes';
 
+// Store 정보 조회 API
+export const getStoreInfo = async (storeId: number) => {
+  try {
+    const response = await api.get(`/api/stores/${storeId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('getStoreInfo 에러:', error);
+    throw error;
+  }
+};
+
+// Store ID로 직접 Profile 가져오기 (Customer가 특정 가게 정보를 볼 때 사용)
+export const getProfileByStoreId = async (storeId: number): Promise<Profile> => {
+  try {
+    console.log('getProfileByStoreId 시작 - storeId:', storeId);
+    
+    // /api/stores/{storeId} 호출하여 store 정보 가져오기
+    const storeResponse = await getStoreInfo(storeId);
+    console.log('Store API 응답:', storeResponse);
+    
+    if (storeResponse.status !== 'success') {
+      throw new Error('매장 정보를 가져오는데 실패했습니다.');
+    }
+    
+    const store = storeResponse.data;
+    
+    // Profile 객체 생성
+    const profile: Profile = {
+      restaurantName: store.name,
+      address: store.address,
+      rating: store.avgStar || 0,
+      reviewCount: store.reviews?.length || 0,
+      image: require('../../../../shared/images/profile.png'),
+      storeId: storeId,
+    };
+    
+    console.log('생성된 Profile:', profile);
+    return profile;
+    
+  } catch (error: any) {
+    console.error('getProfileByStoreId 에러:', error);
+    // 에러 시 기본 프로필 반환
+    return {
+      restaurantName: '매장명',
+      address: '주소 정보 없음',
+      rating: 0,
+      reviewCount: 0,
+      image: require('../../../../shared/images/profile.png'),
+      storeId: storeId,
+    };
+  }
+};
+
+// Store ID로 직접 Reviews 가져오기 (Customer가 특정 가게 리뷰를 볼 때 사용)
+export const getReviewsByStoreId = async (storeId: number): Promise<Review[]> => {
+  try {
+    console.log('getReviewsByStoreId 시작 - storeId:', storeId);
+    
+    // /api/stores/{storeId} 호출하여 store 정보와 reviews 가져오기
+    const storeResponse = await getStoreInfo(storeId);
+    console.log('Store API 응답:', storeResponse);
+    
+    if (storeResponse.status !== 'success') {
+      throw new Error('매장 정보를 가져오는데 실패했습니다.');
+    }
+    
+    const store = storeResponse.data;
+    
+    // Store의 reviews를 Review 타입으로 변환
+    if (store.reviews && store.reviews.length > 0) {
+      const reviews = store.reviews.map((review: any, index: number) => ({
+        id: review.id || index + 1,
+        rating: review.rating || 5,
+        content: review.content || '리뷰 내용',
+        userName: review.customerName || review.author || '고객',
+        createdAt: review.createdAt || new Date().toISOString(),
+      }));
+      
+      console.log('변환된 Reviews:', reviews);
+      return reviews;
+    }
+    
+    console.log('리뷰가 없음');
+    return [];
+    
+  } catch (error: any) {
+    console.error('getReviewsByStoreId 에러:', error);
+    return [];
+  }
+};
+
 // Profile 가져오기 - userId로 storeId를 가져와서 store 정보로 profile 생성
 export const getProfile = async (userId: number): Promise<Profile> => {
   try {

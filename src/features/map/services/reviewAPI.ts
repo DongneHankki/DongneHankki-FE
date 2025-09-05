@@ -4,7 +4,7 @@ import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 export interface Review {
   id: number;
-  reviewId?: number; // API 응답에서 사용할 수 있는 필드
+  reviewId?: number;
   userId: number;
   nickname: string;
   content: string;
@@ -15,6 +15,11 @@ export interface Review {
 
 export interface CreateReviewRequest {
   userId: number;
+  content: string;
+  scope: number;
+}
+
+export interface UpdateReviewRequest {
   content: string;
   scope: number;
 }
@@ -173,7 +178,7 @@ export const deleteReview = async (storeId: number, reviewId: number): Promise<v
 };
 
 // 리뷰 수정
-export const updateReview = async (storeId: number, reviewId: number, reviewData: CreateReviewRequest): Promise<void> => {
+export const updateReview = async (storeId: number, reviewId: number, reviewData: UpdateReviewRequest): Promise<void> => {
   try {
     const tokens = await getTokenFromLocal();
     const headers = tokens?.accessToken ? {
@@ -183,13 +188,13 @@ export const updateReview = async (storeId: number, reviewId: number, reviewData
       'Content-Type': 'application/json',
     };
 
-    console.log('리뷰 수정 요청:', {
-      url: `${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`,
-      storeId,
-      reviewId,
-      reviewData,
-      headers
-    });
+    console.log('=== 리뷰 수정 API 요청 상세 ===');
+    console.log('URL:', `${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`);
+    console.log('storeId:', storeId);
+    console.log('reviewId:', reviewId);
+    console.log('reviewData:', JSON.stringify(reviewData, null, 2));
+    console.log('headers:', JSON.stringify(headers, null, 2));
+    console.log('==============================');
 
     const response = await axios.patch(`${API_BASE_URL}/api/stores/${storeId}/reviews/${reviewId}`, reviewData, {
       headers,
@@ -204,7 +209,13 @@ export const updateReview = async (storeId: number, reviewId: number, reviewData
       throw new Error(response.data.message || '리뷰 수정에 실패했습니다.');
     }
   } catch (error: any) {
-    console.error('리뷰 수정 오류:', error);
+    console.error('=== 리뷰 수정 오류 상세 ===');
+    console.error('error.message:', error.message);
+    console.error('error.response?.status:', error.response?.status);
+    console.error('error.response?.statusText:', error.response?.statusText);
+    console.error('error.response?.data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('error.config:', JSON.stringify(error.config, null, 2));
+    console.error('============================');
     
     if (error.response?.status === 401) {
       throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
@@ -213,7 +224,7 @@ export const updateReview = async (storeId: number, reviewId: number, reviewData
     } else if (error.response?.status === 404) {
       throw new Error('리뷰를 찾을 수 없습니다.');
     } else if (error.response?.status === 500) {
-      throw new Error('서버 오류가 발생했습니다.');
+      throw new Error(`서버 오류가 발생했습니다: ${error.response?.data?.message || '알 수 없는 오류'}`);
     } else {
       throw new Error(`리뷰 수정 중 오류가 발생했습니다: ${error.message}`);
     }
