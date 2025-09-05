@@ -37,7 +37,6 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
   
   const {
     selectedTab,
-    posts,
     storePosts,
     reviews,
     profile,
@@ -46,7 +45,6 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
     error,
     handleTabChange,
     handleWritePost,
-    handleEditProfile,
     handleHideRecommendation,
     handleRefresh,
   } = useFeed(storeId);
@@ -59,6 +57,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
   const handleReviewPress = (review: any) => {
     // 리뷰 상세 화면으로 이동
     (navigation as any).navigate('PostDetail', { review, type: 'review' });
+  };
+
+  const handleEditProfile = () => {
+    // 프로필 편집 화면으로 이동
+    (navigation as any).navigate('ProfileEdit');
   };
 
   if (loading) {
@@ -102,11 +105,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
             <Text style={styles.customerHeaderTitle}>{storeName || '가게 정보'}</Text>
             <View style={styles.placeholder} />
           </View>
-        ) : (
-          // Owner가 접근했을 때: 편집 버튼
-          <TouchableOpacity onPress={handleEditProfile} style={styles.editButton}>
-            <Icon name="pencil" size={24} color="#2E1404" />
-          </TouchableOpacity>
+        ) : (<></>
         )}
       </View>
 
@@ -122,8 +121,10 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ route }) => {
             source={profile.image || require('../../../../shared/images/profile.png')} 
             style={styles.profileImage}
           />
-          <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
-          <Icon name="silverware-fork-knife" size={16} color="#666" />
+          <View style={styles.restaurantNameContainer}>
+            <Text style={styles.restaurantName}>{profile.restaurantName}</Text>
+            <Icon name="silverware-fork-knife" size={23} color="#666" style={{ marginBottom: 5 }}/>
+          </View>
           <Text style={styles.address}>{profile.address}</Text>
           
           {/* 별점 */}
@@ -348,6 +349,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#fff',
+  },
+  restaurantNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
   },
   editButton: {
     padding: 8,

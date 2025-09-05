@@ -22,7 +22,8 @@ import PostDetailScreen from '../../features/sns/owner/screens/PostDetailScreen'
 // 인증 체크 훅 import
 import { useAuthCheck } from '../hooks/useAuthCheck';
 
-
+// FCM 훅 import
+import { useFCM } from '../hooks/useFCM';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -65,6 +66,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userType }) => {
   // 인증 체크 훅 사용
   useAuthCheck();
   
+  // FCM 토큰 초기화 (로그인 후에만 실행됨)
+  const { token: fcmToken, isLoading: fcmLoading } = useFCM();
+
   const getTabScreens = () => {
     if (userType === 'customer') {
       return [

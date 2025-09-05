@@ -13,26 +13,18 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { common } from '../../../shared/styles/commonAuthStyles';
 import { useImagePicker } from '../hooks/useImagePicker';
-import { generateAIMarketingContent, createOwnerPost } from '../services/storeApi';
+import { generateAIMarketingContent, uploadMarketingPost, getUserInfo } from '../services/storeApi';
 import { MarketingPost } from '../types/storeTypes';
-
-const Tab = createBottomTabNavigator();
-
-type NavigationProp = {
-  navigate: (screen: string, params?: any) => void;
-};
+import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
 const StoreManagementScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation();
   const [basicContent, setBasicContent] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [hashtags, setHashtags] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const { selectedImage, isImageUploading, handleImageUpload, removeImage } = useImagePicker();
 
   const handleAIGeneration = async () => {
@@ -43,6 +35,8 @@ const StoreManagementScreen: React.FC = () => {
 
     setIsGeneratingAI(true);
     try {
+      // basicContent의 현재 값을 키워드로 사용
+      const keywords = basicContent.trim() || '커피';
       const aiContent = await generateAIMarketingContent(selectedImage, keywords);
       setBasicContent(aiContent);
       Alert.alert('성공', 'AI 마케팅 글이 생성되었습니다!');
@@ -62,31 +56,27 @@ const StoreManagementScreen: React.FC = () => {
       Alert.alert('알림', '기본 내용을 입력해주세요.');
       return;
     }
-    
+
     setIsUploading(true);
     try {
-      // 해시태그 파싱 (쉼표로 구분)
-      const hashtagArray = hashtags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0)
-        .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
-      
-      const postData = {
-        storeId: 1, // TODO: 실제 storeId 가져오기
+      // keychain에서 storeId 가져오기
+      const tokenData = await getTokenFromLocal();
+      const userInfo = await getUserInfo(tokenData?.userId || '1');
+      const storeId = userInfo?.storeId || 1;
+
+      const postData: MarketingPost = {
+        image: selectedImage,
         content: basicContent.trim(),
-        images: [selectedImage],
-        hashtags: hashtagArray,
       };
-      
-      console.log('게시글 작성 데이터:', postData);
-      
-      await createOwnerPost(postData);
-      
-      Alert.alert('성공', '게시글이 성공적으로 작성되었습니다!');
-      
-      // 성공 후 StorePostingScreen으로 이동하면서 이미지와 내용 전달
-      navigation.navigate('StorePosting', { image: selectedImage, content: basicContent.trim() });
+
+      await uploadMarketingPost(postData);
+
+      // 성공 후 다음 페이지로 이동 (이미지와 내용 전달)
+      (navigation as any).navigate('StorePosting', {
+        image: selectedImage,
+        content: basicContent.trim(),
+        storeId: storeId,
+      });
     } catch (error: any) {
       Alert.alert('오류', error.message);
     } finally {
@@ -107,7 +97,7 @@ const StoreManagementScreen: React.FC = () => {
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>오늘의 마케팅</Text>
           <View style={styles.promptContainer}>
-            <Icon name="sparkles" size={16} color="#FF6B35" />
+            <Icon name="sparkles" size={16} color="#FBA542" />
             <Text style={styles.promptText}>마감 청소 후 사진을 올려볼까요?</Text>
           </View>
         </View>
@@ -135,53 +125,33 @@ const StoreManagementScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* AI 마케팅 글 생성 섹션 */}
-        <View style={styles.aiSection}>
-          <Text style={styles.sectionTitle}>AI 마케팅 글 생성</Text>
-          <TextInput
-            style={styles.keywordsInput}
-            value={keywords}
-            onChangeText={setKeywords}
-            placeholder="키워드를 입력하세요 (예: 맛있는, 신선한, 정성스러운)"
-            multiline
-            textAlignVertical="top"
-          />
-          <TouchableOpacity 
-            style={[styles.aiButton, !selectedImage && styles.aiButtonDisabled]} 
-            onPress={handleAIGeneration}
-            disabled={!selectedImage}
-          >
-            <Icon name="sparkles" size={20} color={selectedImage ? "#fff" : "#ccc"} />
-            <Text style={[styles.aiButtonText, !selectedImage && styles.aiButtonTextDisabled]}>
-              {isGeneratingAI ? 'AI 생성 중...' : 'AI 마케팅 글 생성하기'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 해시태그 입력 섹션 */}
-        <View style={styles.hashtagSection}>
-          <Text style={styles.sectionTitle}>해시태그</Text>
-          <TextInput
-            style={styles.hashtagInput}
-            value={hashtags}
-            onChangeText={setHashtags}
-            placeholder="해시태그를 쉼표로 구분하여 입력하세요 (예: 맛있는, 신선한, 정성스러운)"
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* 기본 내용 입력 섹션 */}
+        {/* 키워드/내용 입력 섹션 */}
         <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>기본 내용</Text>
+          <Text style={styles.sectionTitle}>키워드 또는 마케팅 내용</Text>
+          <Text style={styles.sectionSubtitle}>
+            AI 생성 시: 키워드로 사용됩니다 (예: 커피, 음료, 디저트)
+          </Text>
+          
           <TextInput
             style={styles.contentInput}
             value={basicContent}
             onChangeText={setBasicContent}
-            placeholder="마케팅 내용을 입력하거나 AI로 생성해보세요"
+            placeholder="키워드를 입력하거나 마케팅 내용을 직접 작성하세요"
             multiline
             textAlignVertical="top"
           />
+
+          {/* AI 마케팅 글 생성 버튼 */}
+        <TouchableOpacity 
+          style={[styles.aiButton, !selectedImage && styles.aiButtonDisabled]} 
+          onPress={handleAIGeneration}
+          disabled={!selectedImage}
+        >
+          <Icon name="sparkles" size={20} color={selectedImage ? "#FBA542" : "#ccc"} />
+          <Text style={[styles.aiButtonText, !selectedImage && styles.aiButtonTextDisabled]}>
+            AI 마케팅 글 생성하기
+          </Text>
+        </TouchableOpacity>
         </View>
 
         {/* 업로드 버튼 */}
@@ -233,7 +203,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 12,
+    lineHeight: 20,
   },
   uploadArea: {
     width: '100%',
@@ -293,9 +269,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#FBA542',
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 10,
+    marginTop: 10,
   },
   aiButtonDisabled: {
     borderColor: '#eee',
@@ -310,7 +287,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
   contentSection: {
-    marginBottom: 30,
+    marginBottom: 10,
   },
   contentInput: {
     width: '100%',
@@ -329,35 +306,6 @@ const styles = StyleSheet.create({
   uploadButtonTextDisabled: {
     color: '#999',
   },
-  aiSection: {
-    marginBottom: 20,
-  },
-  keywordsInput: {
-    width: '100%',
-    height: 80,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 12,
-  },
-  hashtagSection: {
-    marginBottom: 20,
-  },
-  hashtagInput: {
-    width: '100%',
-    height: 80,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 12,
-  },
 });
 
 export default StoreManagementScreen;
-

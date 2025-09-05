@@ -1,8 +1,14 @@
-# React Native 기본 스크립트 로드
+# Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve("react-native/scripts/react_native_pods.rb",{paths:[process.argv[1]]})', __dir__]).strip
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
 
 platform :ios, '17.0'
+
+use_frameworks! :linkage => :static
 
 prepare_react_native_project!
 
@@ -14,9 +20,30 @@ target 'DongnaeHankki' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  pod 'NMapsMap'      
+
+  # --- 네이버 지도 iOS SDK ---
+  pod 'NMapsMap'
+  pod 'NMapsGeometry'
 
   post_install do |installer|
     react_native_post_install(installer)
+
+    installer.pods_project.targets.each do |t|
+      t.build_configurations.each do |cfg|
+        cfg.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+        cfg.build_settings['ENABLE_BITCODE'] = 'NO'
+        cfg.build_settings['OTHER_LDFLAGS'] = '$(inherited) -ObjC'
+
+        if t.name.include?('Firebase') || t.name.include?('GoogleUtilities')
+          cfg.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+          cfg.build_settings['DEFINES_MODULE'] = 'YES'
+          cfg.build_settings['SWIFT_VERSION'] = '5.0'
+        end
+
+        if ['React-Core', 'React-RCTAppDelegate'].include?(t.name)
+          cfg.build_settings['DEFINES_MODULE'] = 'YES'
+        end
+      end
+    end
   end
 end
