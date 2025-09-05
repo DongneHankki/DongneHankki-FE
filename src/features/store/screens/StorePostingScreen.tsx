@@ -20,6 +20,7 @@ interface StorePostingScreenProps {
     image: string;
     content: string;
     storeId?: number;
+    hashtags?: string[];
   };
 }
 
@@ -29,8 +30,13 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
   const postingParams = route.params as any;
   
   const [isEditing, setIsEditing] = useState(false);
-  const [marketingContent, setMarketingContent] = useState(postingParams?.content || "손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
+  const [marketingContent, setMarketingContent] = useState(postingParams?.content);
   const [isUploading, setIsUploading] = useState(false);
+
+  // 디버깅을 위한 로그
+  console.log('StorePostingScreen - postingParams:', postingParams);
+  console.log('StorePostingScreen - marketingContent:', marketingContent);
+  console.log('StorePostingScreen - hashtags:', postingParams?.hashtags);
 
   // route params에서 이미지와 내용을 받아옴
   const imageUri = postingParams?.image || require('../../../shared/images/food.png');
@@ -45,7 +51,6 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
   };
 
   const handleCancel = () => {
-    setMarketingContent("손님이 안 보셔도 매일 닦아요 :)\n깨끗한 주방은 저희의 자존심입니다.");
     setIsEditing(false);
   };
 
@@ -62,16 +67,13 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
 
     setIsUploading(true);
     try {
-      const hashtagRegex = /#[\w가-힣]+/g;
-      const extractedHashtags = marketingContent.match(hashtagRegex) || [];
-      
-      // TODO 해시태그
-      const hashtags = extractedHashtags.length > 0 
-        ? extractedHashtags 
-        : ['#마케팅', '#가게홍보'];
 
-      // 전 화면에서 받아온 storeId 사용 (없으면 기본값 1)
-      const storeId = postingParams?.storeId || 1;
+      // 전 화면에서 받아온 storeId 사용
+      const storeId = postingParams?.storeId;
+      if (!storeId) {
+        Alert.alert('오류', '스토어 정보를 찾을 수 없습니다.');
+        return;
+      }
       console.log('StorePostingScreen - postingParams:', postingParams);
       console.log('StorePostingScreen - storeId:', storeId);
 
@@ -79,7 +81,7 @@ const StorePostingScreen: React.FC<StorePostingScreenProps> = () => {
         storeId: storeId, 
         content: marketingContent.trim(),
         images: [postingParams.image],
-        hashtags: hashtags
+        hashtags: postingParams.hashtags || []
       };
 
       console.log('게시글 작성 데이터:', postData);

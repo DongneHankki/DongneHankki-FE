@@ -22,10 +22,8 @@ export interface AIGenerationRequest {
 }
 
 export interface AIGenerationResponse {
-  status: string;
-  code: string;
-  message: string;
-  data: string;
+  content: string;
+  tag: string[]
 }
 
 // 사장님 게시글 작성 API 타입

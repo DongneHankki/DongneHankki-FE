@@ -1,4 +1,5 @@
 import api from '../../../shared/services/api';
+import { getUserIdFromToken } from '../../../shared/utils/jwtUtil';
 import { 
   MarketingPost, 
   AIResponse, 
@@ -8,90 +9,126 @@ import {
   OwnerPostRequest,
   OwnerPostResponse
 } from '../types/storeTypes';
-import { getTokenFromLocal } from '../../../shared/utils/tokenUtil';
 
-// 유저 정보 조회 API
-export const getUserInfo = async (userId: string): Promise<any> => {
+// 유저 정보 조회 인터페이스
+interface UserInfo {
+  userId: number;
+  loginId: string;
+  nickname: string;
+  name: string;
+  phoneNumber: string;
+  role: 'OWNER' | 'CUSTOMER';
+  storeId: number;
+  birth: string;
+  profileImageUrl: string;
+}
+
+interface UserInfoResponse {
+  status: string;
+  code: string;
+  message: string;
+  data: UserInfo;
+}
+
+// 유저 ID로 storeId 조회
+export const getStoreIdByUserId = async (userId: number): Promise<number | null> => {
   try {
     console.log('유저 정보 조회 시작 - userId:', userId);
     
-    const response = await api.get(`/api/users/${userId}`);
+    const response = await api.get<UserInfoResponse>(`/api/users/${userId}`);
     
-    console.log('유저 정보 조회 성공:', response.status);
-    console.log('응답 데이터:', response.data);
+    console.log('유저 정보 조회 성공:', response.data);
     
-    if (response.data.status !== 'success') {
-      throw new Error(response.data.message || '유저 정보 조회에 실패했습니다.');
+    if (response.data.status === 'success' && response.data.data) {
+      return response.data.data.storeId || null;
     }
     
-    return response.data.data;
-    
+    return null;
   } catch (error: any) {
     console.error('유저 정보 조회 실패:', error);
     
     if (error.response?.data) {
       console.error('에러 응답 데이터:', JSON.stringify(error.response.data, null, 2));
-      throw new Error(error.response.data.message || '유저 정보 조회에 실패했습니다.');
     }
     
-    throw new Error('유저 정보 조회에 실패했습니다. 네트워크를 확인해주세요.');
+    return null;
   }
 };
 
-// AI 마케팅 글 생성 API
-export const generateAIMarketingContent = async (image: string, keywords: string = ''): Promise<string> => {
+// 현재 로그인한 유저의 storeId 조회
+export const getCurrentUserStoreId = async (): Promise<number | null> => {
   try {
-    console.log('AI 마케팅 글 생성 시작 - image:', image, 'keywords:', keywords);
+    // 토큰을 가져와야 합니다
+    const { getTokenFromLocal } = await import('../../../shared/utils/tokenUtil');
+    const tokens = await getTokenFromLocal();
+    
+    if (!tokens?.accessToken) {
+      console.error('액세스 토큰을 찾을 수 없습니다.');
+      return null;
+    }
+    
+    const userId = getUserIdFromToken(tokens.accessToken);
+    if (!userId) {
+      console.error('유저 ID를 찾을 수 없습니다.');
+      return null;
+    }
+    
+    // userId를 숫자로 변환
+    const userIdNumber = parseInt(userId, 10);
+    if (isNaN(userIdNumber)) {
+      console.error('유효하지 않은 유저 ID:', userId);
+      return null;
+    }
+    
+    return await getStoreIdByUserId(userIdNumber);
+  } catch (error: any) {
+    console.error('현재 유저의 storeId 조회 실패:', error);
+    return null;
+  }
+}; 
+
+// AI 마케팅 글 생성 API
+export const generateAIMarketingContent = async (image: string, keywords: string = '', storeId: number): Promise<AIGenerationResponse> => {
+  try {
+    console.log('AI 마케팅 글 생성 시작 - image:', image, 'keywords:', keywords, 'storeId:', storeId);
     
     // FormData 생성
     const formData = new FormData();
     
-    // 이미지 파일 추가 (React Native FormData 방식)
-    console.log('이미지 URI:', image);
-    
+    // 이미지 파일 추가 (base64 또는 파일 URI)
     if (image.startsWith('data:')) {
       // base64 이미지인 경우
-      const mimeMatch = image.match(/data:([^;]+);/);
-      const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
-      const extension = mimeType.includes('jpeg') ? 'jpg' : 'png';
-      
-      formData.append('image', {
+      const imageFile = {
         uri: image,
-        type: mimeType,
-        name: `marketing_image.${extension}`,
-      });
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
+    } else if (image.startsWith('file://')) {
+      // 로컬 파일인 경우
+      const imageFile = {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
     } else {
-      // 파일 URI인 경우 (file:// 또는 기타)
-      const isJpg = image.toLowerCase().includes('.jpg') || image.toLowerCase().includes('.jpeg');
-      
-      formData.append('image', {
+      // URI인 경우
+      const imageFile = {
         uri: image,
-        type: isJpg ? 'image/jpeg' : 'image/png',
-        name: isJpg ? 'marketing_image.jpg' : 'marketing_image.png',
-      });
+        type: 'image/jpeg',
+        name: 'marketing_image.jpg',
+      } as any;
+      formData.append('image', imageFile);
     }
     
-    console.log('FormData에 이미지 추가 완료');
+    // 키워드 추가
+    formData.append('text', keywords);
     
-    const tokenData = await getTokenFromLocal();
-    const userId = tokenData?.userId || '1';
-    const userInfo = await getUserInfo(userId);
-    const storeId = userInfo?.storeId || 1;
+    console.log('FormData 생성 완료:', formData);
     
-    console.log('토큰 데이터:', tokenData);
-    console.log('유저 ID:', userId);
-    console.log('유저 정보:', userInfo);
-    console.log('스토어 ID:', storeId);
-    // 키워드 추가 (빈 문자열이면 기본값 사용)
-    formData.append('text', keywords || '커피');
-    
-    // FormData 내용 확인
-    console.log('FormData 생성 완료');
-    console.log('FormData _parts:', (formData as any)._parts);
-    console.log('API 호출 URL:', '/api/posts/generate/'+storeId);
-    console.log('storeId:', storeId);
-    
-    const response = await api.post('/api/posts/generate/'+storeId, formData, {
+    // API 호출 - storeId를 path parameter로 전달
+    const response = await api.post<AIGenerationResponse>(`/api/posts/generate/${storeId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -99,55 +136,28 @@ export const generateAIMarketingContent = async (image: string, keywords: string
     
     console.log('AI API 응답 성공:', response.status);
     console.log('응답 데이터:', response.data);
-    console.log('응답 데이터 타입:', typeof response.data);
     
-    // AI API는 문자열을 직접 반환하지만, 경우에 따라 객체일 수도 있음
-    if (typeof response.data === 'string') {
-      return response.data;
-    } else if (response.data && typeof response.data === 'object') {
-      // 객체인 경우 data 필드나 message 필드 확인
-      return response.data.data || response.data.message || JSON.stringify(response.data);
-    } else {
-      return String(response.data);
-    }
+    return response.data;
     
   } catch (error: any) {
     console.error('AI 마케팅 글 생성 실패:', error);
-    console.error('에러 상태 코드:', error.response?.status);
-    console.error('에러 상태 텍스트:', error.response?.statusText);
     
     // 에러 응답 데이터 확인
     if (error.response?.data) {
       console.error('에러 응답 데이터:', JSON.stringify(error.response.data, null, 2));
-      throw new Error(error.response.data.message || `AI 마케팅 글 생성에 실패했습니다. (${error.response.status})`);
+      throw new Error(error.response.data.message || 'AI 마케팅 글 생성에 실패했습니다.');
     }
     
     // 네트워크 에러 등
-    throw new Error(`AI 마케팅 글 생성에 실패했습니다. 네트워크를 확인해주세요. (${error.message})`);
+    throw new Error('AI 마케팅 글 생성에 실패했습니다. 네트워크를 확인해주세요.');
   }
 };
 
 // 마케팅 포스트 업로드 API
 export const uploadMarketingPost = async (postData: MarketingPost): Promise<UploadResponse> => {
   try {
-    console.log('마케팅 포스트 업로드 시작:', postData);
-    
-    // keychain에서 userId 가져오기
-    const tokenData = await getTokenFromLocal();
-    const userId = tokenData?.userId || '1';
-    
-    // userId로 유저 정보 조회해서 storeId 가져오기
-    const userInfo = await getUserInfo(userId);
-    const storeId = userInfo?.storeId || 1;
-
-    const formData = {
-      storeId: storeId,
-      content: postData.content,
-      images: [postData.image],
-      hashtags: ['#커피'] // 하드코딩된 해시태그
-    };
-    
-    const response = await createOwnerPost(formData);
+    // 모의 업로드 응답
+    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5초 지연
     
     return {
       status: 'success',
@@ -204,11 +214,18 @@ export const createOwnerPost = async (postData: OwnerPostRequest): Promise<Owner
     });
     
     // hashtags 추가 (배열 형태로 전송)
-    postData.hashtags.forEach((tag, index) => {
-      formData.append('hashtags', tag);
-    });
+    if (postData.hashtags && Array.isArray(postData.hashtags)) {
+      postData.hashtags.forEach((tag, index) => {
+        formData.append('hashtags', tag);
+      });
+    }
     
-    console.log('FormData 생성 완료:', formData);
+    // FormData 내용 확인
+    console.log('FormData 생성 완료');
+    console.log('storeId:', postData.storeId);
+    console.log('content:', postData.content);
+    console.log('images:', postData.images);
+    console.log('hashtags:', postData.hashtags);
     
     // API 호출
     const response = await api.post<OwnerPostResponse>('/api/posts/owners', formData, {
@@ -239,4 +256,3 @@ export const createOwnerPost = async (postData: OwnerPostRequest): Promise<Owner
     throw new Error('게시글 작성에 실패했습니다. 네트워크를 확인해주세요.');
   }
 };
-
