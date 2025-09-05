@@ -41,4 +41,3 @@ export const checkAuthCode = async (receiverNumber: string, authCode: string): P
   }
 };
 
-

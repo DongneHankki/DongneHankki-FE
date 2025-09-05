@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ViewStyle, StatusBar, Text, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapView, NaverMapMarkerOverlay, type MarkerSymbol } from '@mj-studio/react-native-naver-map';
@@ -9,15 +9,31 @@ import { useMapList } from '../hooks/useMapList';
 import { useLocation } from '../hooks/useLocation';
 import { getMarkerImage } from '../utils/markerUtils';
 import { useMapStore } from '../store/mapStore';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // 위치 버튼 아이콘 추가
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
+// zoom 값에 따른 zoomLevel 계산 함수
+const calculateZoomLevel = (zoom: number): number => {
+  if (zoom >= 0 && zoom <= 2) return 0;
+  if (zoom >= 3 && zoom <= 5) return 1;
+  if (zoom >= 6 && zoom <= 8) return 2;
+  if (zoom >= 9 && zoom <= 11) return 3;
+  if (zoom >= 12 && zoom <= 14) return 4;
+  if (zoom >= 15 && zoom <= 17) return 5;
+  return 6;
+};
 
 const MapScreen: React.FC = () => {
   const [searchText, setSearchText] = useState('');
-  const [selectedTab, setSelectedTab] = useState<string>(); // 단일 선택으로 변경
-  const snapPoints = ['8%', '40%', '70%']; // snapPoints를 MapScreen에서 정의
-  const [bottomSheetIndex, setBottomSheetIndex] = useState(1); // 기본 상태로 설정
+  const snapPoints = ['8%', '40%', '70%']; // bottomsheet 포인트
+  const [bottomSheetIndex, setBottomSheetIndex] = useState(1);
   const insets = useSafeAreaInsets();
   const mapRef = useRef<any>(null);
+  const [currentFilters, setCurrentFilters] = useState<{
+    scope?: number;
+    days?: string;
+    startAt?: string;
+    endAt?: string;
+  }>({});
   
   // 카메라 상태 추가
   const [camera, setCamera] = useState({
@@ -26,49 +42,72 @@ const MapScreen: React.FC = () => {
     zoom: 15,
   });
 
-  // 사용자 위치 가져오기
+  // 사용자 위치
   const { location, loading: locationLoading, error: locationError } = useLocation();
   
-  // 위치 받아오면 카메라 상태 갱신
+  // mapStore 검색어 상태
+  const { searchKeyword, setSearchKeyword, resetMapState } = useMapStore();
+  
+  // 앱 시작 시 맵 상태 초기화
+  useEffect(() => {
+    resetMapState();
+  }, [resetMapState]);
+  
+  // 카메라
   useEffect(() => {
     if (location) {
       setCamera({
         latitude: location.latitude,
         longitude: location.longitude,
-        zoom: 19,
+        zoom: 18,
       });
     }
   }, [location]);
   
-  // API에서 마커 데이터 가져오기 (사용자 위치 기준)
-  const { loading, error } = useMapList(
-    camera.latitude,
-    camera.longitude,
-    camera.zoom
+  // API에서 마커 데이터 가져오기 (사용자 위치 기준, 검색어 포함)
+  const { loading, error, refetch } = useMapList(
+    location ? location.latitude : null,
+    location ? location.longitude : null,
+    5, // zoomLevel
+    searchKeyword, // 검색어
+    currentFilters // 필터
   );
   
-  // 필터링된 마커 데이터 가져오기
   const { getFilteredClusterMarkers } = useMapStore();
   const clusterMarkers = getFilteredClusterMarkers();
 
+  const memoizedMarkers = useMemo(() => {
+    console.log('memoizedMarkers 실행, clusterMarkers 개수:', clusterMarkers.length);
+    return clusterMarkers.map(marker => ({
+      identifier: marker.identifier,
+      latitude: marker.latitude,
+      longitude: marker.longitude,
+      industryCode: marker.industryCode,
+      image: getMarkerImage(marker.industryCode),
+      width: 20,
+      height: 20
+    }));
+  }, [clusterMarkers]);
 
   const handleSearch = () => {
     console.log('검색:', searchText);
+    setSearchKeyword(searchText);
   };
 
-  const handleVoiceSearch = () => {
-    console.log('음성 검색');
-  };
-
-  const handleTabPress = (tab: string) => {
-    setSelectedTab(prev => prev === tab ? '' : tab);
-  };
+  const handleFilterChange = useCallback((filters: {
+    scope?: number;
+    days?: string;
+    startAt?: string;
+    endAt?: string;
+  }) => {
+    console.log('필터 변경:', filters);
+    setCurrentFilters(filters);
+  }, []);
 
   const { setSelectedStore, getStoreById } = useMapStore();
 
-  const handleMarkerPress = useCallback((marker: any) => {
-    // 마커의 identifier로 해당 매장 정보 찾기
-    const storeId = parseInt(marker.identifier);
+  const handleMarkerPress = useCallback((params: { markerIdentifier: string }) => {
+    const storeId = parseInt(params.markerIdentifier);
     const selectedStore = getStoreById(storeId);
     
     if (selectedStore) {
@@ -83,39 +122,31 @@ const MapScreen: React.FC = () => {
 
   const handleCameraChange = useCallback((event: any) => {
     const { latitude, longitude, zoom } = event;
-    console.log('카메라 변경:', { latitude, longitude, zoom });
   }, []);
 
-  // 화면 정중앙 높이에 버튼 고정
   const screenHeight = Dimensions.get('window').height;
-  const buttonHeight = 20; // 버튼 높이(패딩 포함) 대략값
+  const buttonHeight = 20;
   const fixedBottom = screenHeight / 1.25 - buttonHeight / 1.25;
 
   return (
     <View style={styles.container}>
-      {/* 상태바를 투명하게 설정 */}
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* 전체 화면 지도 */}
       <NaverMapView
         ref={mapRef}
         style={styles.map}
         camera={camera}
         onCameraChanged={handleCameraChange}
+        onTapClusterLeaf={handleMarkerPress}
         isShowLocationButton={true}
         isShowZoomControls={true}
         clusters={[
           {
-            markers: clusterMarkers.map(marker => ({
-              ...marker,
-              image: getMarkerImage(marker.industryCode),
-              width: 24,
-              height: 24
-            })),
-            screenDistance: 100, // 화면상 100픽셀 거리 내의 마커들을 클러스터링
-            minZoom: 0, // 최소 클러스터링
-            maxZoom: 17, // 최대 클러스터링
-            animate: true, // 애니메이션
+            markers: memoizedMarkers,
+            screenDistance: 80,
+            minZoom: 10,
+            maxZoom: 17,
+            animate: false,
           }
         ]}
       >
@@ -128,23 +159,20 @@ const MapScreen: React.FC = () => {
               value={searchText}
               onChangeText={setSearchText}
               onSearch={handleSearch}
-              onVoiceSearch={handleVoiceSearch}
               placeholder="검색"
             />
           </View>
           
           <View style={styles.tabContainer}>
-            <TabButton
-              selectedTab={selectedTab}
-              onTabPress={handleTabPress}
-            />
+            <TabButton />
           </View>
         </View>
       </View>
       <CustomBottomSheet 
         index={bottomSheetIndex}
         onChange={setBottomSheetIndex}
-        selectedTab={selectedTab}
+        locationLoading={locationLoading}
+        onFilterChange={handleFilterChange}
       />
     </View>
   );
@@ -155,6 +183,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000', 
   } as ViewStyle,
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
   map: {
     position: 'absolute',
     top: 0,

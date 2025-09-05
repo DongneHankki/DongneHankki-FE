@@ -40,34 +40,35 @@ export interface StoreData {
   reviews: Array<any>;
 }
 
-export interface BusinessNumberResponse {
+export interface StoreNameResponse {
   status: string;
   code: string;
   message: string;
   data: StoreData;
 }
 
-export const checkBusinessNumber = async (businessNumber: string): Promise<StoreData> => {
+// 여러 가게 검색 API (5개 이하)
+export const searchStores = async (query: string): Promise<StoreData[]> => {
   try {
-    // 사업자 등록번호에서 하이픈 제거
-    const cleanBusinessNumber = businessNumber.replace(/-/g, '');
+    console.log('가게 검색 시작 - query:', query);
     
-    const response = await axios.get(`${API_BASE_URL}/api/stores/business/${cleanBusinessNumber}`, {
-      timeout: 10000,
+    const response = await axios.get(`${API_BASE_URL}/api/stores/search`, {
+      params: { name: query },
     });
 
     if (response.data.status === 'success') {
-      return response.data.data;
+      console.log('가게 검색 성공:', response.data.data);
+      // API가 배열을 반환하는지 확인
+      const data = response.data.data;
+      return Array.isArray(data) ? data : [data];
     } else {
-      throw new Error(response.data.message || '사업자 등록번호 확인에 실패했습니다.');
+      throw new Error(response.data.message || '가게 검색에 실패했습니다.');
     }
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      throw new Error('등록되지 않은 사업자 등록번호입니다.');
-    } else if (error.response?.status === 400) {
-      throw new Error('잘못된 사업자 등록번호 형식입니다.');
-    } else {
-      throw new Error('사업자 등록번호 확인 중 오류가 발생했습니다.');
+    console.error('가게 검색 실패:', error);
+    if (error.response?.data) {
+      console.error('에러 응답 데이터:', JSON.stringify(error.response.data, null, 2));
     }
+    return [];
   }
 };

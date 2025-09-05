@@ -20,6 +20,7 @@ import {
   handleVerifyCode,
   resetVerificationState
 } from '../utils/phoneVerificationUtils';
+import { globalTextStyles } from '../../../shared/styles/globalStyles';
 
 type RegisterScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -52,6 +53,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   } | null>(null);
   const [selectedCarrier, setSelectedCarrier] = useState('SKT');
   const [showCarrierModal, setShowCarrierModal] = useState(false);
+  const [birth, setBirth] = useState('');
+  const [gender, setGender] = useState<'male' | 'female' | ''>('');
+  const [nationality, setNationality] = useState<'korean' | 'foreign' | ''>('');
 
 
 
@@ -202,6 +206,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       setNameError('');
     }
 
+    // 생년월일 검사
+    if (!birth) {
+      Alert.alert('생년월일 입력 필요', '생년월일을 입력해주세요.');
+      valid = false;
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(birth)) {
+      Alert.alert('생년월일 형식 오류', '생년월일을 YYYY-MM-DD 형식으로 입력해주세요.');
+      valid = false;
+    }
+
     // 본인인증 검사
     if (!isVerificationCompleted) {
       Alert.alert('본인인증 필요', '휴대폰 본인인증을 완료해주세요.');
@@ -214,12 +227,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         id,
         password,
         name,
-        phone: phone || '01000000000', 
+        phone: phone || '01000000000',
+        birth
       });
     }
   };
-
-
 
   return (
     <ScrollView contentContainerStyle={common.container}>
@@ -281,13 +293,80 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 
         {/* 이름 */}
         <Text style={common.label}>이름 <Text style={common.star}>*</Text></Text>
-        <TextInput
-            style={[common.input, { width: '100%' }]}
+        <View style={styles.nameRow}>
+          <TextInput
+            style={[common.input, { flex: 1 }]}
             placeholder="예) 홍길동"
-          value={name}
-          onChangeText={text => { setName(text); setNameError(''); }}
-        />
+            value={name}
+            onChangeText={text => { setName(text); setNameError(''); }}
+          />
+          <View style={styles.nationalityButtons}>
+            <TouchableOpacity
+              style={[
+                styles.nationalityButton,
+                nationality === 'korean' && styles.nationalityButtonSelected
+              ]}
+              onPress={() => setNationality('korean')}
+            >
+              <Text style={[
+                styles.nationalityButtonText,
+                nationality === 'korean' && styles.nationalityButtonTextSelected
+              ]}>내국인</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.nationalityButton,
+                nationality === 'foreign' && styles.nationalityButtonSelected
+              ]}
+              onPress={() => setNationality('foreign')}
+            >
+              <Text style={[
+                styles.nationalityButtonText,
+                nationality === 'foreign' && styles.nationalityButtonTextSelected
+              ]}>외국인</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
         {!!nameError && <Text style={common.errorMsg}>{nameError}</Text>}
+
+        {/* 생년월일 */}
+        <Text style={common.label}>생년월일 <Text style={common.star}>*</Text></Text>
+        <View style={styles.birthRow}>
+          <TextInput
+            style={[common.input, { flex: 1 }]}
+            placeholder="YYYY-MM-DD"
+            value={birth}
+            onChangeText={text => setBirth(text)}
+            keyboardType="default"
+            maxLength={10}
+          />
+          <View style={styles.genderButtons}>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                gender === 'male' && styles.genderButtonSelected
+              ]}
+              onPress={() => setGender('male')}
+            >
+              <Text style={[
+                styles.genderButtonText,
+                gender === 'male' && styles.genderButtonTextSelected
+              ]}>남자</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                gender === 'female' && styles.genderButtonSelected
+              ]}
+              onPress={() => setGender('female')}
+            >
+              <Text style={[
+                styles.genderButtonText,
+                gender === 'female' && styles.genderButtonTextSelected
+              ]}>여자</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* 휴대폰 인증 */}
         <Text style={common.label}>휴대폰번호 <Text style={common.star}>*</Text></Text>
@@ -315,7 +394,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         {/* 인증번호 입력 */}
         <View style={styles.verificationContainer}>
           <TextInput
-            style={[common.input, { flex: 1 }]}
+            style={[common.input, { flex: 1 , marginTop:6}]}
             placeholder="인증번호를 입력해 주세요."
             value={verificationCode}
             onChangeText={handleVerificationCodeChange}
@@ -345,7 +424,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         {isVerificationSent && !isVerificationCompleted && (
           <View style={styles.verificationContainer}>
             <TouchableOpacity 
-              style={[styles.verifyButton, { width: '100%' }]} 
+              style={[styles.verifySuccessButton, { width: '100%' }]} 
               onPress={onVerifyCode}
             >
               <Text style={styles.verifyButtonText}>확인</Text>
@@ -472,6 +551,18 @@ const styles = StyleSheet.create({
     minWidth: 100,
     alignItems: 'center',
   },
+  verifySuccessButton: {
+    marginLeft: 0,
+    marginVertical: 4,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#2E1404',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    minWidth: 100,
+    alignItems: 'center',
+  },
   verifyButtonSent: {
     backgroundColor: '#f0f0f0',
     borderColor: '#BDBDBD',
@@ -484,6 +575,7 @@ const styles = StyleSheet.create({
     color: '#2E1404',
     fontWeight: 'bold',
     fontSize: 12,
+    height: 14,
   },
   verifyButtonTextSent: {
     color: '#BDBDBD',
@@ -520,7 +612,7 @@ const styles = StyleSheet.create({
   carrierContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
   carrierSelector: {
     flexDirection: 'row',
@@ -529,7 +621,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BDBDBD',
     borderRadius: 8,
-    paddingVertical: 20,
+    marginTop: 0,
+    marginBottom: 4,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     minWidth: 80,
     justifyContent: 'space-between',
@@ -541,7 +635,7 @@ const styles = StyleSheet.create({
   },
   verificationContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     margin: 0,
   },
   verificationCheckbox: {
@@ -646,7 +740,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   carrierOption: {
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -687,6 +781,68 @@ const styles = StyleSheet.create({
     color: '#AEAEAE',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  nationalityButtons: {
+    flexDirection: 'row',
+    marginLeft: 8,
+  },
+  nationalityButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginLeft: 4,
+    marginBottom: 6,
+  },
+  nationalityButtonSelected: {
+    backgroundColor: '#2E1404',
+    borderColor: '#2E1404',
+  },
+  nationalityButtonText: {
+    color: '#2E1404',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  nationalityButtonTextSelected: {
+    color: '#fff',
+  },
+  birthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  genderButtons: {
+    flexDirection: 'row',
+    marginLeft: 8,
+  },
+  genderButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    borderRadius: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 26,
+    marginLeft: 4,
+    marginBottom: 6,
+  },
+  genderButtonSelected: {
+    backgroundColor: '#2E1404',
+    borderColor: '#2E1404',
+  },
+  genderButtonText: {
+    color: '#2E1404',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  genderButtonTextSelected: {
+    color: '#fff',
   },
 });
 

@@ -44,12 +44,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
             <Icon name="close-circle" size={20} color="#999" />
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          onPress={onVoiceSearch}
-          style={styles.voiceButton}
-        >
-          <Icon name="microphone" size={24} color="#3A2417" />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -87,10 +81,6 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
-  },
-  voiceButton: {
-    padding: 8,
-    marginLeft: 4,
   },
 });
 

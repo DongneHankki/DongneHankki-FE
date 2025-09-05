@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '@env';
-import { useAuthStore } from '../store/authStore';
+import { getTokenFromLocal } from '../utils/tokenUtil';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,11 +9,15 @@ const api = axios.create({
 
 // 요청 인터셉터: 모든 요청에 자동으로 토큰 추가
 api.interceptors.request.use(
-  (config) => {
-    const accessToken = useAuthStore.getState().getAccessToken();
-    
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+  async (config) => {
+    try {
+      const tokenData = await getTokenFromLocal();
+      
+      if (tokenData?.accessToken) {
+        config.headers.Authorization = `Bearer ${tokenData.accessToken}`;
+      }
+    } catch (error) {
+      console.error('토큰 가져오기 실패:', error);
     }
     
     return config;
@@ -35,21 +39,15 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       try {
-        const refreshToken = useAuthStore.getState().getRefreshToken();
+        const tokenData = await getTokenFromLocal();
         
-        if (refreshToken) {
+        if (tokenData?.refreshToken) {
           const response = await axios.post(`${API_BASE_URL}/api/refresh`, {
-            refresh: refreshToken
+            refresh: tokenData.refreshToken
           });
           
           if (response.data?.data?.accessToken) {
             const newAccessToken = response.data.data.accessToken;
-            
-            // Zustand store 업데이트
-            useAuthStore.getState().setTokens({
-              accessToken: newAccessToken,
-              refreshToken: refreshToken,
-            });
             
             // 원래 요청 재시도
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -57,8 +55,7 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // 토큰 갱신 실패 시 로그아웃 처리
-        useAuthStore.getState().clearAuth();
+        console.error('토큰 갱신 실패:', refreshError);
       }
     }
     

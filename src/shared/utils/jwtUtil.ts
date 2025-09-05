@@ -26,14 +26,6 @@ export const decodeJWT = (token: string): JWTPayload | null => {
     );
 
     const decoded = JSON.parse(jsonPayload);
-    console.log('=== JWT 토큰 디코드 결과 (role, userId, loginId) ===');
-    console.log('사용자 ID (sub):', decoded.sub);
-    console.log('사용자 ID (userId):', decoded.userId);
-    console.log('사용자 역할 (role):', decoded.role);
-    console.log('로그인 ID (loginId):', decoded.loginId);
-    console.log('로그인 ID (username):', decoded.username);
-    console.log('로그인 ID (email):', decoded.email);
-    console.log('================================');
     return decoded;
   } catch (error) {
     console.error('JWT 디코드 실패:', error);

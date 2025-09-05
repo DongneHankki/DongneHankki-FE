@@ -12,7 +12,7 @@ import RegisterHeader from '../components/RegisterHeader';
 type Props = NativeStackScreenProps<AuthStackParamList, 'RegisterTerms'>;
 
 const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
-  const { id, password, name, phone, userType, nickname, address, addressDetail, storeName } = route.params;
+  const { id, password, name, phone, userType, nickname, address, addressDetail, storeName, birth, storeId } = route.params;
 
   const getTerms = (userType: 'owner' | 'consumer') => [
     { key: 'terms', label: '이용약관 필수 동의', required: true, detail: '상세 내용' },
@@ -78,9 +78,9 @@ const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
           loginId: id,
           password,
           name,
-          nickname: nickname,
           phoneNumber: phone,
-          storeId: 1,
+          birth,
+          storeId: storeId,
         };
 
         console.log('Owner 회원가입 요청:', {
@@ -98,6 +98,7 @@ const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
           name,
           nickname: nickname,
           phoneNumber: phone,
+          birth,
         };
         console.log('Customer 회원가입 요청:', {
           url,
@@ -130,6 +131,10 @@ const RegisterTerms: React.FC<Props> = ({ route, navigation }) => {
           headers: e.config?.headers,
         }
       });
+      
+      // 실제 전송된 데이터 확인
+      console.error('실제 전송된 데이터:', e.config?.data);
+      console.error('서버 응답 데이터:', e.response?.data);
       
       const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e?.message || '오류가 발생했습니다.';
       Alert.alert('회원가입 실패', errorMessage);

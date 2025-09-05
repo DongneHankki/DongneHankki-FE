@@ -2,12 +2,21 @@ import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { getTokenFromLocal } from '../utils/tokenUtil';
 
+// 401 에러 발생 시 무한 반복 방지를 위한 전역 플래그
+let isNavigatingToLogin = false;
+
 export const useAuthCheck = () => {
   const { accessToken, isAuthenticated, clearAuth } = useAuthStore();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
+      // 이미 로그인 화면으로 네비게이션 중이면 중단
+      if (isNavigatingToLogin) {
+        console.log('이미 로그인 화면으로 네비게이션 중 - 중단');
+        return;
+      }
+
       try {
         const token = await getTokenFromLocal();
         

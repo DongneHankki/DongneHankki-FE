@@ -16,11 +16,12 @@ type UserTypeSelectionParams = {
   password: string;
   name: string;
   phone: string;
+  birth: string;
 };
 
 const UserTypeSelectionScreen: React.FC<UserTypeSelectionScreenProps> = ({ navigation }) => {
   const route = useRoute<RouteProp<AuthStackParamList, 'UserTypeSelection'>>();
-  const { id, password, name, phone } = route.params;
+  const { id, password, name, phone, birth } = route.params;
 
   return (
     <View style={common.container}>
@@ -29,13 +30,13 @@ const UserTypeSelectionScreen: React.FC<UserTypeSelectionScreenProps> = ({ navig
         <Text style={common.subtitle}>가입 방식을{"\n"}선택해주세요!</Text>
         <TouchableOpacity
           style={common.brownButton}
-          onPress={() => navigation.navigate('OwnerRegister', { id, password, name, phone, userType: 'owner' })}
+          onPress={() => navigation.navigate('OwnerRegister', { id, password, name, phone, birth, userType: 'owner' })}
         >
             <Text style={common.brownButtonText}>점주</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={common.brownButton}
-          onPress={() => navigation.navigate('ConsumerRegister', { id, password, name, phone, userType: 'consumer' })}
+          onPress={() => navigation.navigate('ConsumerRegister', { id, password, name, phone, birth, userType: 'consumer' })}
         >
             <Text style={common.brownButtonText}>소비자</Text>
         </TouchableOpacity>
