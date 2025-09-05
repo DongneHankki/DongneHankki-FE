@@ -6,7 +6,8 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../../navigation/AuthNavigator';
 import { common } from '../../../shared/styles/commonAuthStyles';
 import { globalTextStyles, FONTS } from '../../../shared/styles/globalStyles';
-import { checkBusinessNumber } from '../services/CheckBusinessNumberAPI';
+import { searchStores, StoreData } from '../services/CheckStoreNameAPI';
+import StoreSearchDropdown from '../components/StoreSearchDropdown';
 
 interface OwnerRegisterScreenProps {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'OwnerRegister'>;
@@ -17,55 +18,43 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
   const [addressDetail, setAddressDetail] = useState('');
-  const [businessNumberError, setBusinessNumberError] = useState('');
+  const [storeNameError, setStoreNameError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [storeId, setStoreId] = useState<number | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreData | null>(null);
   
   const route = useRoute<RouteProp<AuthStackParamList, 'OwnerRegister'>>();
   const { id, password, name, userType, phone, birth } = route.params;
 
-  // 사업자 등록번호 확인 API 호출
-  const handleBusinessNumberCheck = async () => {
-    if (!businessNumber) {
-      setBusinessNumberError('사업자 등록번호를 입력하세요.');
+  const handleStoreSelect = (store: StoreData) => {
+    setSelectedStore(store);
+    setStoreName(store.name);
+    setAddress(store.address);
+    setStoreId(store.storeId);
+    setStoreNameError('');
+  };
+
+  const handleStoreNameCheck = async () => {
+    if (!storeName) {
+      setStoreNameError('상호명을 입력하세요.');
       return;
     }
 
-    // 사업자 등록번호 형식 검증 (000-00-00000)
-    const businessNumberRegex = /^\d{3}-\d{2}-\d{5}$/;
-    if (!businessNumberRegex.test(businessNumber)) {
-      setBusinessNumberError('올바른 사업자 등록번호 형식으로 입력하세요. (000-00-00000)');
-      return;
-    }
-
-    setIsLoading(true);
-    setBusinessNumberError('');
-
-    try {
-      const storeData = await checkBusinessNumber(businessNumber);
-      
-      // 받은 데이터로 주소와 상호명 자동 채우기
-      setStoreName(storeData.name);
-      setAddress(storeData.address);
-      setAddressDetail(storeData.address);
-      setStoreId(storeData.storeId);
-      
-      Alert.alert('성공', '사업자 등록번호가 확인되었습니다.');
-    } catch (error: any) {
-      setBusinessNumberError(error.message);
-    } finally {
-      setIsLoading(false);
+    const response = await searchStores(storeName);
+    if (response.length > 0) {
+      setStoreId(response[0].storeId);
+      setAddress(response[0].address);
     }
   };
 
   const onNext = () => {
     let valid = true;
     
-    if (!businessNumber) {
-      setBusinessNumberError('사업자 등록번호를 입력하세요.');
+    if (!storeName) {
+      setStoreNameError('상호명을 입력하세요.');
       valid = false;
     } else {
-      setBusinessNumberError('');
+      setStoreNameError('');
     }
     
     if (valid) {
@@ -75,63 +64,30 @@ const OwnerRegisterScreen: React.FC<OwnerRegisterScreenProps> = ({ navigation })
         name,
         phone,
         userType: 'owner',
-        address,
-        addressDetail,
         storeName,
         birth,
-        storeId
+        storeId: storeId || 0,
       });
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={common.container}>
+    <View style={common.container}>
       <RegisterHeader title="회원가입" step={3} onBack={() => navigation.goBack()} />
-      <Text style={common.subtitle}>사업자 번호를 입력해주세요!</Text>
+      <Text style={common.subtitle}>가게를 검색하여 선택해주세요!</Text>
       <View style={common.formWrapper}>
-        <Text style={common.label}>사업자 등록 번호 <Text style={common.star}>*</Text></Text>
-        <TextInput
-          style={common.input}
-          placeholder="000-00-00000"
-          value={businessNumber}
-          onChangeText={(text) => {
-            setBusinessNumber(text);
-            setBusinessNumberError('');
-          }}
-          keyboardType="numeric"
-          maxLength={12}
+        <Text style={common.label}>가게 검색 <Text style={common.star}>*</Text></Text>
+        <StoreSearchDropdown
+          onStoreSelect={handleStoreSelect}
+          placeholder="가게 이름을 검색하세요"
         />
-        {!!businessNumberError && <Text style={common.errorMsg}>{businessNumberError}</Text>}
-        
-        <TouchableOpacity 
-          style={styles.confirmButton} 
-          onPress={handleBusinessNumberCheck}
-          disabled={isLoading}
-        >
-          <Text style={styles.confirmButtonText}>
-            {isLoading ? '확인 중...' : '확인'}
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={common.label}>주소</Text>
-        <TextInput
-          style={common.input}
-          value={addressDetail}
-          onChangeText={setAddressDetail}
-        />
-
-        <Text style={common.label}>상호명</Text>
-        <TextInput
-          style={common.input}
-          value={storeName}
-          onChangeText={setStoreName}
-        />
+        {!!storeNameError && <Text style={common.errorMsg}>{storeNameError}</Text>}
 
         <TouchableOpacity style={common.brownButton} onPress={onNext}>
           <Text style={common.brownButtonText}>다음</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 

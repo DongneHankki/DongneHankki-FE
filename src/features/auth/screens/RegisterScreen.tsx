@@ -337,7 +337,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             placeholder="YYYY-MM-DD"
             value={birth}
             onChangeText={text => setBirth(text)}
-            keyboardType="numeric"
+            keyboardType="default"
             maxLength={10}
           />
           <View style={styles.genderButtons}>
