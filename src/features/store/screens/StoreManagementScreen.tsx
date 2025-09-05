@@ -125,7 +125,23 @@ const StoreManagementScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* AI 마케팅 글 생성 버튼 */}
+        {/* 키워드/내용 입력 섹션 */}
+        <View style={styles.contentSection}>
+          <Text style={styles.sectionTitle}>키워드 또는 마케팅 내용</Text>
+          <Text style={styles.sectionSubtitle}>
+            AI 생성 시: 키워드로 사용됩니다 (예: 커피, 음료, 디저트)
+          </Text>
+          
+          <TextInput
+            style={styles.contentInput}
+            value={basicContent}
+            onChangeText={setBasicContent}
+            placeholder="키워드를 입력하거나 마케팅 내용을 직접 작성하세요"
+            multiline
+            textAlignVertical="top"
+          />
+
+          {/* AI 마케팅 글 생성 버튼 */}
         <TouchableOpacity 
           style={[styles.aiButton, !selectedImage && styles.aiButtonDisabled]} 
           onPress={handleAIGeneration}
@@ -136,21 +152,6 @@ const StoreManagementScreen: React.FC = () => {
             AI 마케팅 글 생성하기
           </Text>
         </TouchableOpacity>
-
-        {/* 키워드/내용 입력 섹션 */}
-        <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>키워드 또는 마케팅 내용</Text>
-          <Text style={styles.sectionSubtitle}>
-            AI 생성 시: 키워드로 사용됩니다 (예: 커피, 음료, 디저트)
-          </Text>
-          <TextInput
-            style={styles.contentInput}
-            value={basicContent}
-            onChangeText={setBasicContent}
-            placeholder="키워드를 입력하거나 마케팅 내용을 직접 작성하세요"
-            multiline
-            textAlignVertical="top"
-          />
         </View>
 
         {/* 업로드 버튼 */}
@@ -268,9 +269,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#FBA542',
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 10,
+    marginTop: 10,
   },
   aiButtonDisabled: {
     borderColor: '#eee',
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
   contentSection: {
-    marginBottom: 30,
+    marginBottom: 10,
   },
   contentInput: {
     width: '100%',
