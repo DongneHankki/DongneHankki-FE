@@ -10,6 +10,15 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+      
+      <meta-data
+          android:name="com.naver.maps.map.NCP_KEY_ID"
+          android:value="n2d7evfrf7" />
+      <!-- (legacy) 4월 17일 이전에 AI NAVER API를 사용하던 지도 API 고객 전용 -->
+      <!-- https://www.ncloud.com/support/notice/all/1930?searchKeyword=map&page=1 -->
+      <meta-data
+          android:name="com.naver.maps.map.CLIENT_ID"
+          android:value="n2d7evfrf7" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
