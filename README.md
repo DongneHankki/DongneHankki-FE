@@ -1,97 +1,129 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+![Image](https://github.com/user-attachments/assets/08441c05-696d-48bd-8f78-9cc2e2b9dfa8)
 
-# Getting Started
+# DongneHankki-FE
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+### 우리 동네의 맛집을 공유하고 추천받는 소셜 다이닝 서비스 '동네한끼' 
 
-## Step 1: Start Metro
+사용자들은 위치 기반으로 주변 음식점에 대한 게시글을 작성하고, 다른 사용자들과 소통하며, 자신의 행위 기반으로 식당을 추천받을 수 있습니다.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+소상공인은 AI 기반으로 쉽게 마케팅 글을 작성하고, 마케팅 리포트를 받을 수 있습니다.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+# 🤔 서비스 개요
 
-```sh
-# Using npm
-npm start
+### **목표 사용자**
+- 자신의 위치 근처 맛집을 찾고자 하는 모든 사람
+- SNS 마케팅에 어려움을 겪는 모든 소상공인, 무료로 AI 마케팅 리포트를 얻고자 하는 모든 소상공인
 
-# OR using Yarn
-yarn start
-```
 
-## Step 2: Build and run your app
+<br>
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
 
-### Android
+### **Needs**
+- 사진 업로드 및 키워드를 통한 자동 SNS 홍보 글 생성
+- 유저 행위 기반의 AI 마케팅 리포트 생성
 
-```sh
-# Using npm
-npm run android
+<br>
 
-# OR using Yarn
-yarn android
-```
+### **Solution 및 기대효과**
+**(1) 간단한 SNS 마케팅**
+- 사용자는 사진과 키워드를 업로드하면 AI가 자동으로 매력적인 SNS 홍보 글을 생성해줍니다. 이를 통해 소상공인은 별도의 마케팅 전문 지식 없이도 손쉽게 온라인 홍보를 진행할 수 있으며, 시간과 비용을 절감할 수 있습니다.
 
-### iOS
+<img src="https://github.com/user-attachments/assets/2dca2ee3-b26d-425e-9302-2b11b5b9fc70" width="70%">
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+**(2) AI 기반의 매장 분석 및 유저 행동을 반영한 마케팅 리포트 생성**
+- AI가 유저의 방문, 좋아요, 댓글 등 다양한 행위 데이터를 분석하여 매장별 맞춤형 마케팅 리포트를 제공합니다. 소상공인은 이를 통해 고객의 선호도와 행동 패턴을 파악하고, 효과적인 마케팅 전략을 수립할 수 있습니다.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+<img src="https://github.com/user-attachments/assets/1070f354-df5d-4da2-b3e5-70de6959fffa" width="70%">
 
-```sh
-bundle install
-```
+**(3) 현재 위치 기반 식당 조회**
+- 현재 위치를 기반으로 근처 식당, 카페, 소매점등을 조회합니다.
 
-Then, and every time you update your native dependencies, run:
+<img src="https://github.com/user-attachments/assets/1de53cf5-390f-4486-9d19-4abf82da59a7" width="70%">
 
-```sh
-bundle exec pod install
-```
+**(4) 유저는 자신의 행위를 기반으로 한 식당 추천**
+- 사용자의 활동(게시글 작성, 좋아요, 팔로우 등)을 기반 알고리즘을 통해 취향에 맞는 식당을 추천합니다. 개인화된 추천을 통해 사용자는 새로운 맛집을 발견하고, 더욱 만족스러운 미식 경험을 누릴 수 있습니다.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+<img src="https://github.com/user-attachments/assets/8cad44a3-0996-4735-807b-95dcf7018939" width="70%">
 
-```sh
-# Using npm
-npm run ios
+<br>
 
-# OR using Yarn
-yarn ios
-```
+### **서비스 차별성**
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+1. 소상공인을 위한 AI 마케팅 솔루션 제공
+   단순한 맛집 추천 앱을 넘어, SNS 마케팅에 어려움을 겪는 소상공인을 위한 실질적인 AI 도구를
+   제공합니다. 몇 가지 키워드와 사진만으로 AI가 홍보 게시글을 자동 생성해주며, 사용자 행동
+   데이터를 기반으로 한 마케팅 리포트를 제공하여 가게 운영에 대한 인사이트를 얻을 수 있습니다.
 
-## Step 3: Modify your app
 
-Now that you have successfully run the app, let's make changes!
+2. 사용자 행위 기반의 개인화 추천
+   단순히 인기나 거리순으로 나열하는 방식에서 벗어나, 사용자의 실제 활동(좋아요, 게시글 조회,
+   팔로우 등)을 Vertex AI로 분석하여 취향에 맞는 식당과 메뉴를 추천합니다. '나'의 데이터가
+   쌓일수록 더욱 정교해지는 맞춤형 미식 경험을 제공합니다.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+3. 소비자와 소상공인을 잇는 선순환 생태계
+   소비자는 진솔한 후기를 통해 맞춤형 추천을 받고, 소상공인은 이 데이터를 바탕으로 효과적인
+   마케팅을 진행합니다. 이는 소비자의 만족도를 높이고 소상공인의 성장을 돕는 선순환 구조를
+   만들어 서비스 전체의 가치를 높입니다.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
 
-## Congratulations! :tada:
 
-You've successfully run and modified your React Native App. :partying_face:
 
-### Now what?
+## ✨ 주요 기능
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+- **사용자**: JWT를 이용한 안전한 사용자 인증 및 프로필 관리를 제공합니다.
+- **게시글**: 음식점 방문 후기를 담은 게시글을 작성, 조회, 수정, 삭제할 수 있으며, 이미지 업로드를 지원합니다.
+- **댓글 & 좋아요**: 게시글에 대한 댓글을 작성하고 다른 사용자들과 소통하며, 관심 있는 게시글에 '좋아요'를 누를 수 있습니다.
+- **상점**: 음식점의 기본 정보, 메뉴, 운영 시간 등을 관리하고, 공공데이터 API와 연동하여 정보를 동기화합니다.
+- **지도**: 현재 위치를 기반으로 주변의 음식점과 등록된 게시글을 지도 위에서 한눈에 확인할 수 있습니다.
+- **팔로우**: 맘에드는 가게를 팔로우하여 가게의 할인, 신메뉴등의 소식을 받아볼 수 있습니다.
+- **알림**: 새로운 팔로워, 댓글, 좋아요 등 주요 활동에 대해 FCM을 통한 실시간 푸시 알림을 보냅니다.
+- **추천**: Google Cloud Vertex AI를 활용하여 사용자의 취향과 주변 음식점 메뉴를 분석해 음식을 추천합니다.
+- **마케팅**: 소상공인은 사진과 간단한 키워드 입력만 하면 AI가 자동으로 마케팅 게시글을 생성해줍니다.
+- **분석**: 사용자 활동 로그를 기록하여 해당 가게에 적절한 AI 마케팅 리포트를 생성해줍니다.
 
-# Troubleshooting
+## 🛠️ 기술 스택
+- **Frontend**: TypeScript, React Native, Zustand, Css in Js
+- **Backend**: Java, Spring Boot, Spring Security, JPA (Hibernate)
+- **Database**: Redis, MySQL
+- **Cloud & DevOps**: AWS S3, Docker, GitHub Actions
+- **External Services**: Firebase Cloud Messaging (FCM), Google Cloud Vertex AI
+- **API & Documentation**: REST API, Swagger (OpenAPI)
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## 🏗️ 프로젝트 구조
 
-# Learn More
+프로젝트는 역할 분리를 위해 계층형 아키텍처(Layered Architecture)를 따릅니다.
 
-To learn more about React Native, take a look at the following resources:
+- `presentation`: API 엔드포인트를 정의하고 HTTP 요청/응답을 처리합니다.
+- `application`: 핵심 비즈니스 로직을 서비스 계층에서 처리합니다.
+- `domain`: 엔티티, VO 등 도메인 모델을 정의합니다.
+- `infrastructure` / `repository`: 데이터베이스 연동, 외부 API 호출 등 인프라 관련 로직을 처리합니다.
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+<br>
+
+# 📜 API 명세서
+[Swagger](https://dh.porogramr.site/swagger-ui/index.html)
+
+<br>
+
+# 📁 ERD
+### MySQL
+<img width="1025" height="580" alt="Image" src="https://github.com/user-attachments/assets/575de48e-9da0-4e50-99cd-cf42915a54f0" />
+
+
+<br>
+
+
+# 👧‍👦 팀 소개
+
+
+| **분야** | **이름** | **포지션**     | **내용**                          |
+|:------:|:------:|-------------|---------------------------------|
+|   개발   |  정소현   | 💻 백엔드      | API 구현                          |
+|   개발   |  박준서   | 💻 백엔드      | 유저, 게시글, 유저 행위 분석 API 개발, 서버 배포 |
+|   개발   |  황호연   | 📱  프론트엔드   | 지도 페이지, 추천 페이지, SNS 페이지 개발      |
+|   개발   |  황혜성   | 📱  프론트엔드   | 로그인 페이지, SNS 페이지 개발               |
+|  디자인   |  권예경   | 📱  앱,웹 디자인 | UI / UX 디자인                          |
+
+<br>
